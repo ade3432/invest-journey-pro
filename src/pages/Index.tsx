@@ -137,6 +137,8 @@ const Index = () => {
     basics: "Trading Basics",
     crypto: "Crypto Fundamentals",
     technical: "Technical Analysis",
+    psychology: "Trading Psychology",
+    fundamental: "Fundamental Analysis",
   };
 
   if (activeLesson) {
