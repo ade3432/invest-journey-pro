@@ -139,6 +139,9 @@ const Index = () => {
     technical: "Technical Analysis",
     psychology: "Trading Psychology",
     fundamental: "Fundamental Analysis",
+    options: "Options Trading",
+    futures: "Futures Trading",
+    derivatives: "Advanced Derivatives",
   };
 
   if (activeLesson) {
