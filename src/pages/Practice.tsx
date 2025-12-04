@@ -1,45 +1,23 @@
 import { TopHeader } from "@/components/navigation/TopHeader";
 import { useUserProgress } from "@/hooks/useUserProgress";
 import { Button } from "@/components/ui/button";
-import { Target, Zap, Clock, RefreshCw, TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
+import { Target, Zap, Clock, RefreshCw, TrendingUp, TrendingDown, BarChart3, Swords } from "lucide-react";
 import { BullMascot } from "@/components/mascot/BullMascot";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { PatternDrill } from "@/components/practice/PatternDrill";
+import { QuickQuiz } from "@/components/practice/QuickQuiz";
+import { ChartChallenge } from "@/components/practice/ChartChallenge";
+import { TradeBattle } from "@/components/practice/TradeBattle";
 
-const challenges = [
-  {
-    id: 1,
-    title: "Quick Quiz",
-    description: "10 questions in 5 minutes",
-    icon: Clock,
-    xp: 50,
-    color: "xp" as const,
-  },
-  {
-    id: 2,
-    title: "Chart Challenge",
-    description: "Predict the next candle",
-    icon: TrendingUp,
-    xp: 30,
-    color: "primary" as const,
-  },
-  {
-    id: 3,
-    title: "Review Mistakes",
-    description: "Practice your weak areas",
-    icon: RefreshCw,
-    xp: 25,
-    color: "accent" as const,
-  },
-];
+type ActiveChallenge = "quiz" | "chart" | "pattern" | "battle" | null;
 
 const Practice = () => {
-  const { progress, addXP } = useUserProgress();
+  const { progress, addXP, addCoins } = useUserProgress();
   const { toast } = useToast();
   const [predictionResult, setPredictionResult] = useState<"up" | "down" | null>(null);
-  const [showPatternDrill, setShowPatternDrill] = useState(false);
+  const [activeChallenge, setActiveChallenge] = useState<ActiveChallenge>(null);
 
   const handlePatternXP = (xp: number) => {
     addXP(xp);
@@ -49,17 +27,45 @@ const Practice = () => {
     });
   };
 
-  const handleChallenge = (challengeId: number, xp: number) => {
+  const handleQuizComplete = (score: number, total: number) => {
+    const xp = score * 5;
     addXP(xp);
     toast({
-      title: "Challenge Started! 🎯",
-      description: `Good luck! You can earn ${xp} XP`,
+      title: "Quiz Complete! 🎉",
+      description: `+${xp} XP earned (${score}/${total} correct)`,
     });
+    setActiveChallenge(null);
+  };
+
+  const handleChartComplete = (score: number, total: number) => {
+    const xp = score * 3;
+    addXP(xp);
+    toast({
+      title: "Chart Challenge Done! 📊",
+      description: `+${xp} XP earned (${score}/${total} correct)`,
+    });
+    setActiveChallenge(null);
+  };
+
+  const handleBattleComplete = (won: boolean, coinsWon: number) => {
+    if (won) {
+      addCoins(coinsWon);
+      addXP(50);
+      toast({
+        title: "Victory! ⚔️",
+        description: `+${coinsWon} coins and +50 XP`,
+      });
+    } else {
+      addXP(15);
+      toast({
+        title: "Good fight! 💪",
+        description: "+15 XP for participating",
+      });
+    }
   };
 
   const handlePrediction = (direction: "up" | "down") => {
     setPredictionResult(direction);
-    // Simulate random result
     const isCorrect = Math.random() > 0.5;
     setTimeout(() => {
       if (isCorrect) {
@@ -79,6 +85,36 @@ const Practice = () => {
     }, 1500);
   };
 
+  const challenges = [
+    {
+      id: "quiz",
+      title: "Quick Quiz",
+      description: "10 questions in 5 minutes",
+      icon: Clock,
+      xp: 50,
+      color: "xp" as const,
+      action: () => setActiveChallenge("quiz"),
+    },
+    {
+      id: "chart",
+      title: "Chart Challenge",
+      description: "Predict the next candle",
+      icon: TrendingUp,
+      xp: 30,
+      color: "primary" as const,
+      action: () => setActiveChallenge("chart"),
+    },
+    {
+      id: "review",
+      title: "Review Mistakes",
+      description: "Practice your weak areas",
+      icon: RefreshCw,
+      xp: 25,
+      color: "accent" as const,
+      action: () => setActiveChallenge("pattern"),
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <TopHeader
@@ -88,10 +124,33 @@ const Practice = () => {
       />
 
       <main className="max-w-lg mx-auto px-4 py-6">
+        {/* Trade Battle Banner */}
+        <div 
+          className="bg-gradient-to-br from-destructive/20 to-destructive/5 rounded-3xl p-6 mb-6 animate-fade-in cursor-pointer hover:from-destructive/30 hover:to-destructive/10 transition-colors"
+          onClick={() => setActiveChallenge("battle")}
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-destructive/20 flex items-center justify-center">
+              <Swords className="w-8 h-8 text-destructive" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-foreground mb-1">
+                Trade Battle
+              </h2>
+              <p className="text-muted-foreground text-sm mb-2">
+                Challenge friends to predict market movements
+              </p>
+              <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+                Win coins • Climb the ranks
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Pattern Drill Banner */}
         <div 
           className="bg-gradient-to-br from-primary/20 to-primary/5 rounded-3xl p-6 mb-6 animate-fade-in cursor-pointer hover:from-primary/30 hover:to-primary/10 transition-colors"
-          onClick={() => setShowPatternDrill(true)}
+          onClick={() => setActiveChallenge("pattern")}
         >
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center">
@@ -176,8 +235,9 @@ const Practice = () => {
           {challenges.map((challenge, index) => (
             <div
               key={challenge.id}
-              className="bg-card rounded-2xl border border-border p-4 flex items-center gap-4 animate-fade-in"
+              className="bg-card rounded-2xl border border-border p-4 flex items-center gap-4 animate-fade-in cursor-pointer hover:border-primary/50 transition-colors"
               style={{ animationDelay: `${index * 100}ms` }}
+              onClick={challenge.action}
             >
               <div className={cn(
                 "w-12 h-12 rounded-xl flex items-center justify-center",
@@ -194,7 +254,6 @@ const Practice = () => {
               <Button
                 variant="game"
                 size="sm"
-                onClick={() => handleChallenge(challenge.id, challenge.xp)}
               >
                 +{challenge.xp} XP
               </Button>
@@ -203,10 +262,31 @@ const Practice = () => {
         </div>
       </main>
 
-      {showPatternDrill && (
+      {activeChallenge === "pattern" && (
         <PatternDrill
-          onClose={() => setShowPatternDrill(false)}
+          onClose={() => setActiveChallenge(null)}
           onXPEarned={handlePatternXP}
+        />
+      )}
+
+      {activeChallenge === "quiz" && (
+        <QuickQuiz
+          onClose={() => setActiveChallenge(null)}
+          onComplete={handleQuizComplete}
+        />
+      )}
+
+      {activeChallenge === "chart" && (
+        <ChartChallenge
+          onClose={() => setActiveChallenge(null)}
+          onComplete={handleChartComplete}
+        />
+      )}
+
+      {activeChallenge === "battle" && (
+        <TradeBattle
+          onClose={() => setActiveChallenge(null)}
+          onComplete={handleBattleComplete}
         />
       )}
     </div>

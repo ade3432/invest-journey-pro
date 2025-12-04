@@ -52,6 +52,13 @@ export function useUserProgress() {
     });
   };
 
+  const addCoins = (amount: number) => {
+    setProgress((prev) => ({
+      ...prev,
+      coins: prev.coins + amount,
+    }));
+  };
+
   const loseHeart = () => {
     setProgress((prev) => ({
       ...prev,
@@ -79,6 +86,7 @@ export function useUserProgress() {
   return {
     progress,
     addXP,
+    addCoins,
     loseHeart,
     toggleFavorite,
     incrementDailyProgress,
