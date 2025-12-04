@@ -1,11 +1,15 @@
+import { useNavigate } from "react-router-dom";
 import { TopHeader } from "@/components/navigation/TopHeader";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCloudProgress } from "@/hooks/useCloudProgress";
 import { useUserProgress } from "@/hooks/useUserProgress";
 import { StatCard } from "@/components/profile/StatCard";
 import { AchievementBadge } from "@/components/profile/AchievementBadge";
 import { BullMascot } from "@/components/mascot/BullMascot";
-import { Zap, Flame, BookOpen, Target, Settings, Moon, Sun } from "lucide-react";
+import { Zap, Flame, BookOpen, Target, Settings, Moon, Sun, LogOut, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const achievements = [
   { icon: "🎯", name: "First Steps", description: "Complete your first lesson", isUnlocked: true },
@@ -17,7 +21,13 @@ const achievements = [
 ];
 
 const Profile = () => {
-  const { progress } = useUserProgress();
+  const { user, signOut } = useAuth();
+  const { progress: cloudProgress } = useCloudProgress();
+  const { progress: localProgress } = useUserProgress();
+  const progress = user ? cloudProgress : localProgress;
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -28,6 +38,14 @@ const Profile = () => {
   const toggleTheme = () => {
     document.documentElement.classList.toggle("dark");
     setIsDark(!isDark);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out",
+      description: "You've been signed out successfully.",
+    });
   };
 
   const levelTitle = progress.level < 5 
@@ -57,9 +75,25 @@ const Profile = () => {
               Lv.{progress.level}
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-1">Trader</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-1">
+            {user?.email?.split('@')[0] || 'Trader'}
+          </h1>
           <p className="text-muted-foreground font-semibold">{levelTitle}</p>
+          {user && (
+            <p className="text-xs text-muted-foreground mt-1">{user.email}</p>
+          )}
         </div>
+
+        {/* Auth Actions */}
+        {!user ? (
+          <Button 
+            className="w-full mb-6" 
+            onClick={() => navigate('/auth')}
+          >
+            <LogIn className="w-4 h-4 mr-2" />
+            Sign In to Save Progress
+          </Button>
+        ) : null}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3 mb-8">
@@ -139,6 +173,17 @@ const Profile = () => {
             <Button variant="outline" className="w-full justify-start">
               Notifications
             </Button>
+
+            {user && (
+              <Button 
+                variant="outline" 
+                className="w-full justify-start text-destructive hover:text-destructive"
+                onClick={handleSignOut}
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
+            )}
           </div>
         </div>
       </main>
