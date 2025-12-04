@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Lock, CheckCircle, Play, Star, Coins } from "lucide-react";
+import { Lock, CheckCircle, Play, Star, Coins, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LessonCardProps {
@@ -11,6 +11,7 @@ interface LessonCardProps {
   coinReward: number;
   isCompleted: boolean;
   isLocked: boolean;
+  isPremium?: boolean;
   onClick: () => void;
 }
 
@@ -22,6 +23,7 @@ export default function LessonCard({
   coinReward,
   isCompleted,
   isLocked,
+  isPremium,
   onClick,
 }: LessonCardProps) {
   const difficultyColors = {
@@ -35,7 +37,8 @@ export default function LessonCard({
       className={cn(
         "border-border/50 cursor-pointer transition-all hover:shadow-md",
         isLocked && "opacity-60 cursor-not-allowed",
-        isCompleted && "border-green-500/50 bg-green-500/5"
+        isCompleted && "border-green-500/50 bg-green-500/5",
+        isPremium && !isCompleted && "border-warning/30 bg-warning/5"
       )}
       onClick={() => !isLocked && onClick()}
     >
@@ -43,10 +46,12 @@ export default function LessonCard({
         <div className="flex items-start gap-3">
           <div className={cn(
             "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-            isCompleted ? "bg-green-500/20" : isLocked ? "bg-muted" : "bg-primary/20"
+            isCompleted ? "bg-green-500/20" : isPremium ? "bg-warning/20" : isLocked ? "bg-muted" : "bg-primary/20"
           )}>
             {isCompleted ? (
               <CheckCircle className="w-5 h-5 text-green-500" />
+            ) : isPremium ? (
+              <Crown className="w-5 h-5 text-warning" />
             ) : isLocked ? (
               <Lock className="w-5 h-5 text-muted-foreground" />
             ) : (
@@ -56,6 +61,11 @@ export default function LessonCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-semibold truncate">{title}</h3>
+              {isPremium && (
+                <Badge variant="secondary" className="bg-warning/20 text-warning text-xs">
+                  Premium
+                </Badge>
+              )}
               <Badge variant="secondary" className={cn("text-xs", difficultyColors[difficulty as keyof typeof difficultyColors])}>
                 {difficulty}
               </Badge>

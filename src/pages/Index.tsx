@@ -12,7 +12,14 @@ import LessonCard from "@/components/lessons/LessonCard";
 import LessonPlayer from "@/components/lessons/LessonPlayer";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, Loader2 } from "lucide-react";
+import { LogIn, Loader2, Crown, Lock } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Lesson {
   id: string;
@@ -26,6 +33,8 @@ interface Lesson {
   content: unknown;
 }
 
+const FREE_LESSONS_COUNT = 3; // First 3 lessons are free
+
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const { progress: cloudProgress, loading: progressLoading, addXP, addCoins, loseHeart, incrementDailyProgress } = useCloudProgress();
@@ -38,9 +47,37 @@ const Index = () => {
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [isPremium, setIsPremium] = useState(false);
+  const [premiumLoading, setPremiumLoading] = useState(true);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   // Use cloud progress if logged in, otherwise local
   const progress = user ? cloudProgress : localProgress;
+
+  // Check premium status
+  useEffect(() => {
+    const checkPremium = async () => {
+      if (!user) {
+        setIsPremium(false);
+        setPremiumLoading(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('check-premium');
+        if (!error && data) {
+          setIsPremium(data.isPremium);
+        }
+      } catch (error) {
+        console.error('Error checking premium:', error);
+      } finally {
+        setPremiumLoading(false);
+      }
+    };
+    
+    checkPremium();
+  }, [user]);
 
   useEffect(() => {
     const fetchLessons = async () => {
@@ -114,7 +151,7 @@ const Index = () => {
     setActiveLesson(null);
   };
 
-  const handleStartLesson = (lesson: Lesson) => {
+  const handleStartLesson = (lesson: Lesson, globalIndex: number) => {
     if (!user) {
       toast({
         title: "Sign in required",
@@ -123,7 +160,39 @@ const Index = () => {
       navigate('/auth');
       return;
     }
+    
+    // Check if lesson requires premium
+    if (globalIndex >= FREE_LESSONS_COUNT && !isPremium) {
+      setShowPaywall(true);
+      return;
+    }
+    
     setActiveLesson(lesson);
+  };
+
+  const handlePurchasePremium = async () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    
+    setIsPurchasing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment');
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to start checkout. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPurchasing(false);
+      setShowPaywall(false);
+    }
   };
 
   // Group lessons by module
@@ -230,31 +299,38 @@ const Index = () => {
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
           ) : Object.entries(lessonsByModule).length > 0 ? (
-            Object.entries(lessonsByModule).map(([moduleId, moduleLessons]) => (
-              <div key={moduleId}>
-                <h2 className="text-lg font-bold mb-3">{moduleNames[moduleId] || moduleId}</h2>
-                <div className="space-y-3">
-                  {moduleLessons.map((lesson, idx) => {
-                    const isCompleted = completedLessons.includes(lesson.id);
-                    const isLocked = idx > 0 && !completedLessons.includes(moduleLessons[idx - 1].id) && !isCompleted;
-                    
-                    return (
-                      <LessonCard
-                        key={lesson.id}
-                        title={lesson.title}
-                        description={lesson.description || ''}
-                        difficulty={lesson.difficulty}
-                        xpReward={lesson.xp_reward}
-                        coinReward={lesson.coin_reward}
-                        isCompleted={isCompleted}
-                        isLocked={isLocked}
-                        onClick={() => handleStartLesson(lesson)}
-                      />
-                    );
-                  })}
+            (() => {
+              let globalIndex = 0;
+              return Object.entries(lessonsByModule).map(([moduleId, moduleLessons]) => (
+                <div key={moduleId}>
+                  <h2 className="text-lg font-bold mb-3">{moduleNames[moduleId] || moduleId}</h2>
+                  <div className="space-y-3">
+                    {moduleLessons.map((lesson, idx) => {
+                      const currentGlobalIndex = globalIndex++;
+                      const isCompleted = completedLessons.includes(lesson.id);
+                      const isProgressLocked = idx > 0 && !completedLessons.includes(moduleLessons[idx - 1].id) && !isCompleted;
+                      const isPremiumLocked = currentGlobalIndex >= FREE_LESSONS_COUNT && !isPremium;
+                      const isLocked = isProgressLocked || isPremiumLocked;
+                      
+                      return (
+                        <LessonCard
+                          key={lesson.id}
+                          title={lesson.title}
+                          description={lesson.description || ''}
+                          difficulty={lesson.difficulty}
+                          xpReward={lesson.xp_reward}
+                          coinReward={lesson.coin_reward}
+                          isCompleted={isCompleted}
+                          isLocked={isLocked}
+                          isPremium={isPremiumLocked}
+                          onClick={() => handleStartLesson(lesson, currentGlobalIndex)}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))
+              ));
+            })()
           ) : (
             <p className="text-center text-muted-foreground py-8">
               No lessons available yet.
@@ -262,6 +338,52 @@ const Index = () => {
           )}
         </div>
       </main>
+
+      {/* Premium Paywall Dialog */}
+      <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
+        <DialogContent className="max-w-sm mx-4">
+          <DialogHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-warning/20 rounded-full flex items-center justify-center mb-4">
+              <Crown className="w-8 h-8 text-warning" />
+            </div>
+            <DialogTitle className="text-xl">Unlock Premium</DialogTitle>
+            <DialogDescription className="text-center">
+              Get access to all lessons and features for just $10 (one-time payment)
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Lock className="w-4 h-4 text-primary" />
+                <span>Unlock all lessons</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Lock className="w-4 h-4 text-primary" />
+                <span>Access advanced content</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Lock className="w-4 h-4 text-primary" />
+                <span>Premium support</span>
+              </div>
+            </div>
+            <Button 
+              className="w-full bg-warning hover:bg-warning/90 text-warning-foreground"
+              onClick={handlePurchasePremium}
+              disabled={isPurchasing}
+            >
+              {isPurchasing ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Crown className="w-4 h-4 mr-2" />
+              )}
+              {isPurchasing ? "Processing..." : "Upgrade Now - $10"}
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={() => setShowPaywall(false)}>
+              Maybe Later
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
