@@ -1,88 +1,159 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Gamified Trading App - Duolingo-inspired */
+    --background: 45 30% 97%;
+    --foreground: 220 25% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 25% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 25% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Emerald Green (Growth/Success) */
+    --primary: 152 70% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 152 70% 55%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Warm Amber (Streaks/Energy) */
+    --secondary: 38 95% 55%;
+    --secondary-foreground: 38 95% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Accent - Soft Indigo (Actions/Premium) */
+    --accent: 245 60% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Muted */
+    --muted: 220 15% 92%;
+    --muted-foreground: 220 15% 45%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive - Loss Red */
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Success */
+    --success: 152 70% 45%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    /* Warning */
+    --warning: 38 95% 55%;
+    --warning-foreground: 38 95% 15%;
 
+    /* XP Purple */
+    --xp: 270 60% 55%;
+    --xp-foreground: 0 0% 100%;
+
+    /* Streak Orange */
+    --streak: 25 95% 55%;
+    --streak-foreground: 0 0% 100%;
+
+    /* Hearts Red */
+    --hearts: 350 80% 55%;
+    --hearts-foreground: 0 0% 100%;
+
+    /* Coin Gold */
+    --coin: 45 95% 50%;
+    --coin-foreground: 45 95% 15%;
+
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 152 70% 45%;
+
+    --radius: 1rem;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(152 70% 45%), hsl(152 70% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(38 95% 55%), hsl(45 95% 60%));
+    --gradient-accent: linear-gradient(135deg, hsl(245 60% 55%), hsl(270 60% 60%));
+    --gradient-xp: linear-gradient(135deg, hsl(270 60% 50%), hsl(290 60% 55%));
+    --gradient-streak: linear-gradient(135deg, hsl(25 95% 50%), hsl(38 95% 55%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(45 20% 98%));
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 8px -2px hsl(220 25% 15% / 0.08);
+    --shadow-md: 0 4px 16px -4px hsl(220 25% 15% / 0.12);
+    --shadow-lg: 0 8px 32px -8px hsl(220 25% 15% / 0.16);
+    --shadow-glow: 0 0 24px hsl(152 70% 45% / 0.3);
+    --shadow-streak: 0 4px 16px hsl(25 95% 55% / 0.3);
+
+    /* Sidebar */
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 222 30% 8%;
+    --foreground: 45 20% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 222 25% 12%;
+    --card-foreground: 45 20% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 222 25% 12%;
+    --popover-foreground: 45 20% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 152 70% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 152 70% 60%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 38 90% 50%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 245 60% 65%;
+    --accent-foreground: 0 0% 100%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --muted: 222 20% 18%;
+    --muted-foreground: 220 15% 60%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --success: 152 70% 50%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 90% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --xp: 270 60% 60%;
+    --xp-foreground: 0 0% 100%;
+
+    --streak: 25 90% 55%;
+    --streak-foreground: 0 0% 100%;
+
+    --hearts: 350 75% 55%;
+    --hearts-foreground: 0 0% 100%;
+
+    --coin: 45 90% 55%;
+    --coin-foreground: 45 90% 10%;
+
+    --border: 222 20% 20%;
+    --input: 222 20% 20%;
+    --ring: 152 70% 50%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(152 70% 45%), hsl(152 70% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(38 90% 45%), hsl(45 90% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(245 60% 55%), hsl(270 60% 65%));
+    --gradient-xp: linear-gradient(135deg, hsl(270 60% 55%), hsl(290 60% 60%));
+    --gradient-streak: linear-gradient(135deg, hsl(25 90% 50%), hsl(38 90% 55%));
+    --gradient-card: linear-gradient(180deg, hsl(222 25% 12%), hsl(222 25% 14%));
+
+    --shadow-sm: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 4px 16px -4px hsl(0 0% 0% / 0.4);
+    --shadow-lg: 0 8px 32px -8px hsl(0 0% 0% / 0.5);
+    --shadow-glow: 0 0 24px hsl(152 70% 50% / 0.4);
+    --shadow-streak: 0 4px 16px hsl(25 90% 55% / 0.4);
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -100,6 +171,133 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-nunito antialiased;
   }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 shadow-md;
+  }
+
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .gradient-xp {
+    background: var(--gradient-xp);
+  }
+
+  .gradient-streak {
+    background: var(--gradient-streak);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-streak {
+    box-shadow: var(--shadow-streak);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom Animations */
+@keyframes bounce-in {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4); }
+  50% { box-shadow: 0 0 0 12px hsl(var(--primary) / 0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes confetti {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(-100px) rotate(720deg); opacity: 0; }
+}
+
+@keyframes slide-up {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+.animate-confetti {
+  animation: confetti 1s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-wiggle {
+  animation: wiggle 0.5s ease-in-out;
+}
+
+/* Progress bar animations */
+.progress-fill {
+  transition: width 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* Safe area for mobile */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
