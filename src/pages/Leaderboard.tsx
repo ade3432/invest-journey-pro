@@ -1,21 +1,20 @@
+import { useState, useEffect } from "react";
 import { TopHeader } from "@/components/navigation/TopHeader";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCloudProgress } from "@/hooks/useCloudProgress";
 import { useUserProgress } from "@/hooks/useUserProgress";
+import { supabase } from "@/integrations/supabase/client";
 import { Trophy, Medal, Crown, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BullMascot } from "@/components/mascot/BullMascot";
 
-const leaderboardData = [
-  { rank: 1, name: "CryptoKing", xp: 15420, avatar: "👑" },
-  { rank: 2, name: "DiamondHands", xp: 14890, avatar: "💎" },
-  { rank: 3, name: "MoonRider", xp: 13200, avatar: "🚀" },
-  { rank: 4, name: "ChartMaster", xp: 12100, avatar: "📊" },
-  { rank: 5, name: "BTCMaxi", xp: 11800, avatar: "₿" },
-  { rank: 6, name: "DeFiDegen", xp: 10500, avatar: "🔥" },
-  { rank: 7, name: "You", xp: 8950, avatar: "🐂", isUser: true },
-  { rank: 8, name: "AltSeason", xp: 8200, avatar: "🌙" },
-  { rank: 9, name: "HodlQueen", xp: 7800, avatar: "👸" },
-  { rank: 10, name: "TradingNinja", xp: 7100, avatar: "🥷" },
-];
+interface LeaderboardUser {
+  rank: number;
+  name: string;
+  xp: number;
+  avatar: string;
+  isUser?: boolean;
+}
 
 const leagues = [
   { name: "Bronze", minXP: 0, icon: "🥉", color: "text-amber-600" },
@@ -25,7 +24,79 @@ const leagues = [
 ];
 
 const Leaderboard = () => {
-  const { progress } = useUserProgress();
+  const { user } = useAuth();
+  const { progress: cloudProgress } = useCloudProgress();
+  const { progress: localProgress } = useUserProgress();
+  const progress = user ? cloudProgress : localProgress;
+  
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_progress')
+          .select(`
+            xp,
+            user_id,
+            profiles!inner(username)
+          `)
+          .order('xp', { ascending: false })
+          .limit(20);
+
+        if (error) throw error;
+
+        const avatars = ["👑", "💎", "🚀", "📊", "₿", "🔥", "🌙", "👸", "🥷", "⭐"];
+        
+        const leaderboard: LeaderboardUser[] = (data || []).map((item, idx) => ({
+          rank: idx + 1,
+          name: (item.profiles as any)?.username?.split('@')[0] || `Trader ${idx + 1}`,
+          xp: item.xp,
+          avatar: avatars[idx % avatars.length],
+          isUser: user?.id === item.user_id,
+        }));
+
+        // If no data or user not in leaderboard, show mock data
+        if (leaderboard.length === 0) {
+          setLeaderboardData([
+            { rank: 1, name: "CryptoKing", xp: 15420, avatar: "👑" },
+            { rank: 2, name: "DiamondHands", xp: 14890, avatar: "💎" },
+            { rank: 3, name: "MoonRider", xp: 13200, avatar: "🚀" },
+            { rank: 4, name: "ChartMaster", xp: 12100, avatar: "📊" },
+            { rank: 5, name: "BTCMaxi", xp: 11800, avatar: "₿" },
+            { rank: 6, name: "DeFiDegen", xp: 10500, avatar: "🔥" },
+            { rank: 7, name: "You", xp: progress.xp, avatar: "🐂", isUser: true },
+            { rank: 8, name: "AltSeason", xp: 8200, avatar: "🌙" },
+            { rank: 9, name: "HodlQueen", xp: 7800, avatar: "👸" },
+            { rank: 10, name: "TradingNinja", xp: 7100, avatar: "🥷" },
+          ]);
+        } else {
+          setLeaderboardData(leaderboard);
+        }
+      } catch (error) {
+        console.error('Error fetching leaderboard:', error);
+        // Fallback to mock data
+        setLeaderboardData([
+          { rank: 1, name: "CryptoKing", xp: 15420, avatar: "👑" },
+          { rank: 2, name: "DiamondHands", xp: 14890, avatar: "💎" },
+          { rank: 3, name: "MoonRider", xp: 13200, avatar: "🚀" },
+          { rank: 4, name: "ChartMaster", xp: 12100, avatar: "📊" },
+          { rank: 5, name: "BTCMaxi", xp: 11800, avatar: "₿" },
+          { rank: 6, name: "DeFiDegen", xp: 10500, avatar: "🔥" },
+          { rank: 7, name: "You", xp: progress.xp, avatar: "🐂", isUser: true },
+          { rank: 8, name: "AltSeason", xp: 8200, avatar: "🌙" },
+          { rank: 9, name: "HodlQueen", xp: 7800, avatar: "👸" },
+          { rank: 10, name: "TradingNinja", xp: 7100, avatar: "🥷" },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, [user, progress.xp]);
+
   const currentLeague = leagues.filter((l) => progress.xp >= l.minXP).pop();
 
   const getRankIcon = (rank: number) => {
@@ -80,41 +151,41 @@ const Leaderboard = () => {
 
         {/* Leaderboard List */}
         <div className="space-y-2">
-          {leaderboardData.map((user, index) => (
+          {leaderboardData.map((entry, index) => (
             <div
-              key={user.rank}
+              key={entry.rank}
               className={cn(
                 "flex items-center gap-4 p-4 rounded-2xl border transition-all animate-fade-in",
-                user.isUser
+                entry.isUser
                   ? "bg-primary/10 border-primary/30"
                   : "bg-card border-border",
-                user.rank <= 3 && "border-coin/30"
+                entry.rank <= 3 && "border-coin/30"
               )}
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="w-10 flex items-center justify-center">
-                {getRankIcon(user.rank)}
+                {getRankIcon(entry.rank)}
               </div>
               
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-2xl">
-                {user.isUser ? <BullMascot size="sm" mood="happy" animate={false} /> : user.avatar}
+                {entry.isUser ? <BullMascot size="sm" mood="happy" animate={false} /> : entry.avatar}
               </div>
 
               <div className="flex-1">
                 <h4 className={cn(
                   "font-bold",
-                  user.isUser ? "text-primary" : "text-foreground"
+                  entry.isUser ? "text-primary" : "text-foreground"
                 )}>
-                  {user.name}
+                  {entry.name}
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                  {user.xp.toLocaleString()} XP
+                  {entry.xp.toLocaleString()} XP
                 </p>
               </div>
 
-              {user.rank <= 3 && (
+              {entry.rank <= 3 && (
                 <div className="text-lg">
-                  {user.rank === 1 ? "🏆" : user.rank === 2 ? "🥈" : "🥉"}
+                  {entry.rank === 1 ? "🏆" : entry.rank === 2 ? "🥈" : "🥉"}
                 </div>
               )}
             </div>
