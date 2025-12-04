@@ -142,6 +142,7 @@ const Index = () => {
     options: "Options Trading",
     futures: "Futures Trading",
     derivatives: "Advanced Derivatives",
+    patterns: "Chart Pattern Recognition",
   };
 
   if (activeLesson) {

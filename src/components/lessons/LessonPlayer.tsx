@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { MultipleChoice, TrueFalse, FillBlank, SwipeCard } from "./QuestionTypes";
+import { PatternRecognition, PatternNaming } from "./PatternRecognition";
+import { PatternKey } from "./CandlestickChart";
 import { X, Heart, Star, Coins, PartyPopper } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Question {
-  type: 'multiple_choice' | 'true_false' | 'fill_blank' | 'swipe';
+  type: 'multiple_choice' | 'true_false' | 'fill_blank' | 'swipe' | 'pattern_recognition' | 'pattern_naming';
   question?: string;
   statement?: string;
   sentence?: string;
@@ -17,6 +19,8 @@ interface Question {
   isTrue?: boolean;
   answer?: string;
   isBullish?: boolean;
+  patternKey?: PatternKey;
+  showPatternName?: boolean;
 }
 
 interface LessonPlayerProps {
@@ -100,6 +104,22 @@ export default function LessonPlayer({
           <SwipeCard
             scenario={currentQuestion.scenario!}
             isBullish={currentQuestion.isBullish!}
+            onAnswer={handleAnswer}
+          />
+        );
+      case 'pattern_recognition':
+        return (
+          <PatternRecognition
+            patternKey={currentQuestion.patternKey!}
+            showPatternName={currentQuestion.showPatternName}
+            onAnswer={handleAnswer}
+          />
+        );
+      case 'pattern_naming':
+        return (
+          <PatternNaming
+            patternKey={currentQuestion.patternKey!}
+            options={currentQuestion.options!}
             onAnswer={handleAnswer}
           />
         );
