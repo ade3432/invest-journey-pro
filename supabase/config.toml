@@ -1,1 +1,7 @@
 project_id = "zdugbnuyupaorqpnfipk"
+
+[functions.ai-tutor]
+verify_jwt = false
+
+[functions.alpha-vantage]
+verify_jwt = false
