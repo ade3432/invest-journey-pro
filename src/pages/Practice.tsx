@@ -1,11 +1,12 @@
 import { TopHeader } from "@/components/navigation/TopHeader";
 import { useUserProgress } from "@/hooks/useUserProgress";
 import { Button } from "@/components/ui/button";
-import { Target, Zap, Clock, RefreshCw, TrendingUp, TrendingDown } from "lucide-react";
+import { Target, Zap, Clock, RefreshCw, TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
 import { BullMascot } from "@/components/mascot/BullMascot";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { PatternDrill } from "@/components/practice/PatternDrill";
 
 const challenges = [
   {
@@ -38,6 +39,15 @@ const Practice = () => {
   const { progress, addXP } = useUserProgress();
   const { toast } = useToast();
   const [predictionResult, setPredictionResult] = useState<"up" | "down" | null>(null);
+  const [showPatternDrill, setShowPatternDrill] = useState(false);
+
+  const handlePatternXP = (xp: number) => {
+    addXP(xp);
+    toast({
+      title: "Streak Bonus! 🔥",
+      description: `+${xp} XP for 5 correct in a row`,
+    });
+  };
 
   const handleChallenge = (challengeId: number, xp: number) => {
     addXP(xp);
@@ -78,6 +88,29 @@ const Practice = () => {
       />
 
       <main className="max-w-lg mx-auto px-4 py-6">
+        {/* Pattern Drill Banner */}
+        <div 
+          className="bg-gradient-to-br from-primary/20 to-primary/5 rounded-3xl p-6 mb-6 animate-fade-in cursor-pointer hover:from-primary/30 hover:to-primary/10 transition-colors"
+          onClick={() => setShowPatternDrill(true)}
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center">
+              <BarChart3 className="w-8 h-8 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-foreground mb-1">
+                Pattern Practice
+              </h2>
+              <p className="text-muted-foreground text-sm mb-2">
+                Drill candlestick patterns with unlimited attempts
+              </p>
+              <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                No hearts lost • Earn streak bonuses
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Paper Trading Banner */}
         <div className="bg-gradient-to-br from-accent/20 to-accent/5 rounded-3xl p-6 mb-6 animate-fade-in">
           <div className="flex items-center gap-4">
@@ -169,6 +202,13 @@ const Practice = () => {
           ))}
         </div>
       </main>
+
+      {showPatternDrill && (
+        <PatternDrill
+          onClose={() => setShowPatternDrill(false)}
+          onXPEarned={handlePatternXP}
+        />
+      )}
     </div>
   );
 };
