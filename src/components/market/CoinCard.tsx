@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Star } from "lucide-react";
+import { Sparkline } from "./Sparkline";
 
 interface CoinCardProps {
   name: string;
@@ -7,6 +8,7 @@ interface CoinCardProps {
   price: number;
   change24h: number;
   image: string;
+  sparklineData?: number[];
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
   onClick?: () => void;
@@ -18,6 +20,7 @@ export function CoinCard({
   price,
   change24h,
   image,
+  sparklineData,
   isFavorite = false,
   onToggleFavorite,
   onClick,
@@ -39,6 +42,15 @@ export function CoinCard({
         <h3 className="font-bold text-foreground truncate">{name}</h3>
         <p className="text-sm text-muted-foreground uppercase">{symbol}</p>
       </div>
+
+      {sparklineData && sparklineData.length > 0 && (
+        <Sparkline 
+          data={sparklineData} 
+          isPositive={isPositive}
+          width={60}
+          height={28}
+        />
+      )}
 
       <div className="text-right">
         <p className="font-bold text-foreground">
