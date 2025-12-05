@@ -161,6 +161,7 @@ const Market = () => {
                       price={coin.current_price}
                       change24h={coin.price_change_percentage_24h}
                       image={coin.image}
+                      sparklineData={coin.sparkline_in_7d?.price}
                       isFavorite={(localProgress.favorites || []).includes(coin.id)}
                       onToggleFavorite={() => toggleFavorite(coin.id)}
                     />
