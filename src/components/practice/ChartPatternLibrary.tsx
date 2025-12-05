@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { X, ChevronRight, TrendingUp, TrendingDown, BookOpen } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { X, ChevronRight, TrendingUp, TrendingDown, BookOpen, Brain, Trophy, Zap, Check, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useUserProgress } from "@/hooks/useUserProgress";
+import { toast } from "sonner";
 
 interface Candle {
   open: number;
@@ -558,13 +560,276 @@ interface ChartPatternLibraryProps {
   onClose: () => void;
 }
 
+interface QuizState {
+  currentIndex: number;
+  score: number;
+  streak: number;
+  answered: boolean;
+  selectedAnswer: string | null;
+  isCorrect: boolean | null;
+  questions: ChartPattern[];
+  totalQuestions: number;
+  finished: boolean;
+}
+
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export function ChartPatternLibrary({ onClose }: ChartPatternLibraryProps) {
   const [selectedPattern, setSelectedPattern] = useState<ChartPattern | null>(null);
   const [filter, setFilter] = useState<"all" | "reversal" | "continuation">("all");
+  const [mode, setMode] = useState<"library" | "quiz">("library");
+  const [quiz, setQuiz] = useState<QuizState | null>(null);
+  const { addXP, loseHeart, progress } = useUserProgress();
 
   const filteredPatterns = ADVANCED_PATTERNS.filter(p => 
     filter === "all" || p.category === filter
   );
+
+  const startQuiz = useCallback(() => {
+    const shuffled = shuffleArray(ADVANCED_PATTERNS);
+    const questions = shuffled.slice(0, 10);
+    setQuiz({
+      currentIndex: 0,
+      score: 0,
+      streak: 0,
+      answered: false,
+      selectedAnswer: null,
+      isCorrect: null,
+      questions,
+      totalQuestions: questions.length,
+      finished: false,
+    });
+    setMode("quiz");
+  }, []);
+
+  const getQuizOptions = useCallback((correctPattern: ChartPattern): string[] => {
+    const otherPatterns = ADVANCED_PATTERNS.filter(p => p.id !== correctPattern.id);
+    const shuffledOthers = shuffleArray(otherPatterns).slice(0, 3);
+    const options = [correctPattern.name, ...shuffledOthers.map(p => p.name)];
+    return shuffleArray(options);
+  }, []);
+
+  const handleQuizAnswer = useCallback((answer: string) => {
+    if (!quiz || quiz.answered) return;
+    
+    const currentPattern = quiz.questions[quiz.currentIndex];
+    const isCorrect = answer === currentPattern.name;
+    
+    if (isCorrect) {
+      addXP(5);
+      toast.success("+5 XP!", { duration: 1500 });
+    } else {
+      loseHeart();
+    }
+    
+    setQuiz(prev => prev ? {
+      ...prev,
+      answered: true,
+      selectedAnswer: answer,
+      isCorrect,
+      score: isCorrect ? prev.score + 1 : prev.score,
+      streak: isCorrect ? prev.streak + 1 : 0,
+    } : null);
+  }, [quiz, addXP, loseHeart]);
+
+  const nextQuestion = useCallback(() => {
+    if (!quiz) return;
+    
+    if (quiz.currentIndex + 1 >= quiz.totalQuestions) {
+      // Quiz finished
+      const bonusXP = quiz.score >= 8 ? 25 : quiz.score >= 5 ? 10 : 0;
+      if (bonusXP > 0) {
+        addXP(bonusXP);
+        toast.success(`Quiz Complete! Bonus +${bonusXP} XP`, { duration: 2000 });
+      }
+      setQuiz(prev => prev ? { ...prev, finished: true } : null);
+    } else {
+      setQuiz(prev => prev ? {
+        ...prev,
+        currentIndex: prev.currentIndex + 1,
+        answered: false,
+        selectedAnswer: null,
+        isCorrect: null,
+      } : null);
+    }
+  }, [quiz, addXP]);
+
+  // Quiz Results Screen
+  if (quiz?.finished) {
+    const percentage = Math.round((quiz.score / quiz.totalQuestions) * 100);
+    return (
+      <div className="fixed inset-0 bg-background z-50 animate-fade-in">
+        <div className="max-w-lg mx-auto px-4 py-6 h-full flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => { setQuiz(null); setMode("library"); }}
+              className="rounded-full"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+            <h2 className="text-lg font-bold text-foreground">Quiz Complete!</h2>
+            <div className="w-10" />
+          </div>
+
+          <div className="flex-1 flex flex-col items-center justify-center gap-6">
+            <div className={cn(
+              "w-24 h-24 rounded-full flex items-center justify-center",
+              percentage >= 80 ? "bg-success/20" : percentage >= 50 ? "bg-warning/20" : "bg-destructive/20"
+            )}>
+              <Trophy className={cn(
+                "w-12 h-12",
+                percentage >= 80 ? "text-success" : percentage >= 50 ? "text-warning" : "text-destructive"
+              )} />
+            </div>
+            
+            <div className="text-center">
+              <h3 className="text-4xl font-bold text-foreground mb-2">{quiz.score}/{quiz.totalQuestions}</h3>
+              <p className="text-muted-foreground">
+                {percentage >= 80 ? "Excellent! You're a pattern master!" : 
+                 percentage >= 50 ? "Good job! Keep practicing!" : 
+                 "Keep learning, you'll get better!"}
+              </p>
+            </div>
+
+            <div className="flex gap-4 mt-4">
+              <Button onClick={startQuiz} className="gap-2">
+                <Brain className="w-4 h-4" />
+                Try Again
+              </Button>
+              <Button variant="outline" onClick={() => { setQuiz(null); setMode("library"); }}>
+                Back to Library
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Quiz Mode
+  if (mode === "quiz" && quiz) {
+    const currentPattern = quiz.questions[quiz.currentIndex];
+    const options = getQuizOptions(currentPattern);
+    
+    return (
+      <div className="fixed inset-0 bg-background z-50 animate-fade-in">
+        <div className="max-w-lg mx-auto px-4 py-6 h-full flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => { setQuiz(null); setMode("library"); }}
+              className="rounded-full"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 text-sm font-semibold">
+                <Zap className="w-4 h-4 text-warning" />
+                <span>{quiz.streak}</span>
+              </div>
+              <div className="text-sm font-semibold text-muted-foreground">
+                {quiz.currentIndex + 1}/{quiz.totalQuestions}
+              </div>
+            </div>
+            <div className="text-sm font-bold text-primary">
+              {quiz.score * 5} XP
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="h-2 bg-muted rounded-full mb-6 overflow-hidden">
+            <div 
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: `${((quiz.currentIndex + (quiz.answered ? 1 : 0)) / quiz.totalQuestions) * 100}%` }}
+            />
+          </div>
+
+          <ScrollArea className="flex-1">
+            <div className="space-y-6 pb-24">
+              {/* Question */}
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-foreground mb-2">What pattern is this?</h3>
+                <p className="text-muted-foreground text-sm">Identify the chart pattern below</p>
+              </div>
+
+              {/* Pattern Chart */}
+              <div className="bg-card rounded-2xl border border-border p-4">
+                <PatternChart 
+                  candles={currentPattern.candles} 
+                  highlightLast={currentPattern.highlightLast}
+                  height={160}
+                />
+              </div>
+
+              {/* Options */}
+              <div className="space-y-3">
+                {options.map((option, index) => {
+                  const isSelected = quiz.selectedAnswer === option;
+                  const isCorrectAnswer = option === currentPattern.name;
+                  const showResult = quiz.answered;
+                  
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleQuizAnswer(option)}
+                      disabled={quiz.answered}
+                      className={cn(
+                        "w-full p-4 rounded-2xl border-2 text-left font-semibold transition-all",
+                        !showResult && "border-border bg-card hover:border-primary/50 active:scale-[0.98]",
+                        showResult && isCorrectAnswer && "border-success bg-success/10 text-success",
+                        showResult && isSelected && !isCorrectAnswer && "border-destructive bg-destructive/10 text-destructive",
+                        showResult && !isSelected && !isCorrectAnswer && "border-border bg-card opacity-50"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{option}</span>
+                        {showResult && isCorrectAnswer && <Check className="w-5 h-5 text-success" />}
+                        {showResult && isSelected && !isCorrectAnswer && <XCircle className="w-5 h-5 text-destructive" />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Feedback & Next Button */}
+              {quiz.answered && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className={cn(
+                    "p-4 rounded-2xl",
+                    quiz.isCorrect ? "bg-success/10 border border-success/20" : "bg-destructive/10 border border-destructive/20"
+                  )}>
+                    <p className={cn(
+                      "font-semibold mb-1",
+                      quiz.isCorrect ? "text-success" : "text-destructive"
+                    )}>
+                      {quiz.isCorrect ? "Correct! 🎉" : "Not quite!"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {currentPattern.description}
+                    </p>
+                  </div>
+                  
+                  <Button onClick={nextQuestion} className="w-full" size="lg">
+                    {quiz.currentIndex + 1 >= quiz.totalQuestions ? "See Results" : "Next Question"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+      </div>
+    );
+  }
 
   if (selectedPattern) {
     return (
@@ -670,8 +935,23 @@ export function ChartPatternLibrary({ onClose }: ChartPatternLibraryProps) {
           <div className="w-10" />
         </div>
 
+        {/* Quiz Mode Banner */}
+        <button
+          onClick={startQuiz}
+          className="mb-4 p-4 bg-gradient-to-r from-primary/20 to-primary/10 rounded-2xl border border-primary/30 flex items-center gap-4 hover:from-primary/30 hover:to-primary/20 transition-all active:scale-[0.98]"
+        >
+          <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+            <Brain className="w-6 h-6 text-primary" />
+          </div>
+          <div className="flex-1 text-left">
+            <h3 className="font-bold text-foreground">Pattern Quiz</h3>
+            <p className="text-sm text-muted-foreground">Test your skills & earn XP</p>
+          </div>
+          <div className="text-sm font-semibold text-primary">+5 XP each</div>
+        </button>
+
         {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-4">
           {[
             { id: "all" as const, label: "All" },
             { id: "reversal" as const, label: "Reversal" },
