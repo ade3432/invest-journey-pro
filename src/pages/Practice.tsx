@@ -1,7 +1,7 @@
 import { TopHeader } from "@/components/navigation/TopHeader";
 import { useUserProgress } from "@/hooks/useUserProgress";
 import { Button } from "@/components/ui/button";
-import { Target, Zap, Clock, RefreshCw, TrendingUp, TrendingDown, BarChart3, Swords } from "lucide-react";
+import { Target, Zap, Clock, RefreshCw, TrendingUp, TrendingDown, BarChart3, Swords, BookOpen } from "lucide-react";
 import { BullMascot } from "@/components/mascot/BullMascot";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -10,8 +10,9 @@ import { PatternDrill } from "@/components/practice/PatternDrill";
 import { QuickQuiz } from "@/components/practice/QuickQuiz";
 import { ChartChallenge } from "@/components/practice/ChartChallenge";
 import { TradeBattle } from "@/components/practice/TradeBattle";
+import { ChartPatternLibrary } from "@/components/practice/ChartPatternLibrary";
 
-type ActiveChallenge = "quiz" | "chart" | "pattern" | "battle" | null;
+type ActiveChallenge = "quiz" | "chart" | "pattern" | "battle" | "patterns-library" | null;
 
 const Practice = () => {
   const { progress, addXP, addCoins } = useUserProgress();
@@ -124,6 +125,29 @@ const Practice = () => {
       />
 
       <main className="max-w-lg mx-auto px-4 py-6">
+        {/* Chart Patterns Library Banner */}
+        <div 
+          className="bg-gradient-to-br from-xp/20 to-xp/5 rounded-3xl p-6 mb-6 animate-fade-in cursor-pointer hover:from-xp/30 hover:to-xp/10 transition-colors"
+          onClick={() => setActiveChallenge("patterns-library")}
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-xp/20 flex items-center justify-center">
+              <BookOpen className="w-8 h-8 text-xp" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-foreground mb-1">
+                Chart Patterns Library
+              </h2>
+              <p className="text-muted-foreground text-sm mb-2">
+                Learn Double Top, Head & Shoulders, Wedges and more
+              </p>
+              <div className="flex items-center gap-2 text-sm font-medium text-xp">
+                11 patterns • Visual examples • Trading tips
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Trade Battle Banner */}
         <div 
           className="bg-gradient-to-br from-destructive/20 to-destructive/5 rounded-3xl p-6 mb-6 animate-fade-in cursor-pointer hover:from-destructive/30 hover:to-destructive/10 transition-colors"
@@ -288,6 +312,10 @@ const Practice = () => {
           onClose={() => setActiveChallenge(null)}
           onComplete={handleBattleComplete}
         />
+      )}
+
+      {activeChallenge === "patterns-library" && (
+        <ChartPatternLibrary onClose={() => setActiveChallenge(null)} />
       )}
     </div>
   );
