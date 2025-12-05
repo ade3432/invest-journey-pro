@@ -23,6 +23,42 @@ interface ChartPattern {
   highlightLast: number;
 }
 
+// Line chart for pattern visualization (cleaner look)
+function PatternLineChart({ candles, isPositive, height = 64 }: { candles: Candle[]; isPositive: boolean; height?: number }) {
+  const prices = candles.map(c => (c.open + c.close) / 2);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+  const width = 80;
+  const padding = 4;
+
+  const points = prices.map((price, i) => {
+    const x = padding + (i / (prices.length - 1)) * (width - padding * 2);
+    const y = padding + (height - padding * 2) - ((price - min) / range) * (height - padding * 2);
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
+      <polyline
+        points={points}
+        fill="none"
+        stroke={isPositive ? "hsl(var(--success))" : "hsl(var(--destructive))"}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* End dot */}
+      <circle
+        cx={parseFloat(points.split(' ').pop()?.split(',')[0] || '0')}
+        cy={parseFloat(points.split(' ').pop()?.split(',')[1] || '0')}
+        r="3"
+        fill={isPositive ? "hsl(var(--success))" : "hsl(var(--destructive))"}
+      />
+    </svg>
+  );
+}
+
 const ADVANCED_PATTERNS: ChartPattern[] = [
   {
     id: "double-top",
@@ -279,6 +315,167 @@ const ADVANCED_PATTERNS: ChartPattern[] = [
     ],
     highlightLast: 6,
   },
+  {
+    id: "triple-top",
+    name: "Triple Top",
+    category: "reversal",
+    signal: "bearish",
+    description: "A bearish reversal pattern with three peaks at roughly the same level. More reliable than double top as it shows stronger resistance.",
+    howToSpot: [
+      "Three peaks at approximately the same price",
+      "Two valleys between the peaks (support line)",
+      "Volume decreases with each successive peak",
+      "Confirmation on break below support"
+    ],
+    tradingTip: "Enter short when price breaks below the support level formed by the valleys. Target is the pattern height projected downward.",
+    candles: [
+      { open: 90, high: 100, low: 89, close: 99 },
+      { open: 99, high: 100, low: 93, close: 94 },
+      { open: 94, high: 100, low: 93, close: 99 },
+      { open: 99, high: 100, low: 94, close: 95 },
+      { open: 95, high: 99, low: 94, close: 98 },
+      { open: 98, high: 99, low: 88, close: 89 },
+    ],
+    highlightLast: 6,
+  },
+  {
+    id: "triple-bottom",
+    name: "Triple Bottom",
+    category: "reversal",
+    signal: "bullish",
+    description: "A bullish reversal pattern with three troughs at roughly the same level. More reliable than double bottom, showing strong support.",
+    howToSpot: [
+      "Three troughs at approximately the same price",
+      "Two peaks between the troughs (resistance line)",
+      "Volume increases on the third bottom",
+      "Confirmation on break above resistance"
+    ],
+    tradingTip: "Go long when price breaks above resistance. Target is the pattern height projected upward from the breakout point.",
+    candles: [
+      { open: 100, high: 101, low: 90, close: 91 },
+      { open: 91, high: 97, low: 90, close: 96 },
+      { open: 96, high: 97, low: 90, close: 91 },
+      { open: 91, high: 96, low: 90, close: 95 },
+      { open: 95, high: 96, low: 91, close: 92 },
+      { open: 92, high: 102, low: 91, close: 101 },
+    ],
+    highlightLast: 6,
+  },
+  {
+    id: "symmetrical-triangle",
+    name: "Symmetrical Triangle",
+    category: "continuation",
+    signal: "neutral",
+    description: "A neutral pattern where price makes lower highs and higher lows, converging to a point. Can break either direction.",
+    howToSpot: [
+      "Converging trendlines (one down, one up)",
+      "Lower highs and higher lows",
+      "Decreasing volume as pattern forms",
+      "Breakout typically occurs 2/3 through pattern"
+    ],
+    tradingTip: "Wait for breakout direction before entering. Trade in the direction of the breakout with stop-loss on the other side of the triangle.",
+    candles: [
+      { open: 95, high: 100, low: 94, close: 99 },
+      { open: 99, high: 100, low: 92, close: 93 },
+      { open: 93, high: 98, low: 92, close: 97 },
+      { open: 97, high: 98, low: 94, close: 95 },
+      { open: 95, high: 97, low: 94, close: 96 },
+      { open: 96, high: 102, low: 95, close: 101 },
+    ],
+    highlightLast: 5,
+  },
+  {
+    id: "pennant",
+    name: "Pennant",
+    category: "continuation",
+    signal: "bullish",
+    description: "A short-term continuation pattern similar to a symmetrical triangle, but smaller and forms after a strong move.",
+    howToSpot: [
+      "Strong price move (the pole)",
+      "Small symmetrical triangle (the pennant)",
+      "Forms over 1-3 weeks typically",
+      "Breakout in the direction of prior trend"
+    ],
+    tradingTip: "Enter on breakout in the direction of the pole. Target is the pole length added to breakout point.",
+    candles: [
+      { open: 85, high: 86, low: 84, close: 85 },
+      { open: 85, high: 95, low: 84, close: 94 },
+      { open: 94, high: 96, low: 93, close: 94 },
+      { open: 94, high: 95, low: 93, close: 94 },
+      { open: 94, high: 95, low: 94, close: 95 },
+      { open: 95, high: 100, low: 94, close: 99 },
+    ],
+    highlightLast: 4,
+  },
+  {
+    id: "rounding-bottom",
+    name: "Rounding Bottom",
+    category: "reversal",
+    signal: "bullish",
+    description: "A long-term reversal pattern resembling a bowl or saucer. Indicates a gradual shift from bearish to bullish sentiment.",
+    howToSpot: [
+      "Gradual U-shaped price curve",
+      "Slow decline followed by slow recovery",
+      "Volume forms a similar U-shape",
+      "Takes weeks or months to form"
+    ],
+    tradingTip: "Enter when price breaks above the pattern's left edge (resistance). This is a long-term pattern with significant upside potential.",
+    candles: [
+      { open: 100, high: 101, low: 97, close: 98 },
+      { open: 98, high: 99, low: 94, close: 95 },
+      { open: 95, high: 96, low: 92, close: 93 },
+      { open: 93, high: 95, low: 92, close: 94 },
+      { open: 94, high: 97, low: 93, close: 96 },
+      { open: 96, high: 101, low: 95, close: 100 },
+    ],
+    highlightLast: 6,
+  },
+  {
+    id: "channel-up",
+    name: "Ascending Channel",
+    category: "continuation",
+    signal: "bullish",
+    description: "A bullish pattern where price moves between two parallel upward-sloping lines. Traders buy at support and sell at resistance.",
+    howToSpot: [
+      "Two parallel upward-sloping lines",
+      "Price bounces between support and resistance",
+      "Higher highs and higher lows",
+      "Volume may decrease over time"
+    ],
+    tradingTip: "Buy near the lower trendline (support), sell near upper trendline (resistance). Watch for breakouts in either direction.",
+    candles: [
+      { open: 90, high: 93, low: 89, close: 92 },
+      { open: 92, high: 95, low: 91, close: 94 },
+      { open: 94, high: 96, low: 93, close: 95 },
+      { open: 95, high: 98, low: 94, close: 97 },
+      { open: 97, high: 99, low: 96, close: 98 },
+      { open: 98, high: 101, low: 97, close: 100 },
+    ],
+    highlightLast: 6,
+  },
+  {
+    id: "channel-down",
+    name: "Descending Channel",
+    category: "continuation",
+    signal: "bearish",
+    description: "A bearish pattern where price moves between two parallel downward-sloping lines. Often leads to continuation of downtrend.",
+    howToSpot: [
+      "Two parallel downward-sloping lines",
+      "Price bounces between support and resistance",
+      "Lower highs and lower lows",
+      "Look for breakout below support"
+    ],
+    tradingTip: "Short near upper trendline, cover near lower trendline. A break below the channel signals acceleration of the downtrend.",
+    candles: [
+      { open: 100, high: 101, low: 97, close: 98 },
+      { open: 98, high: 99, low: 95, close: 96 },
+      { open: 96, high: 97, low: 93, close: 94 },
+      { open: 94, high: 95, low: 91, close: 92 },
+      { open: 92, high: 93, low: 89, close: 90 },
+      { open: 90, high: 91, low: 87, close: 88 },
+    ],
+    highlightLast: 6,
+  },
 ];
 
 function PatternChart({ candles, highlightLast, height = 160 }: { candles: Candle[]; highlightLast: number; height?: number }) {
@@ -506,11 +703,11 @@ export function ChartPatternLibrary({ onClose }: ChartPatternLibraryProps) {
                 onClick={() => setSelectedPattern(pattern)}
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-20 h-16 bg-muted/50 rounded-xl overflow-hidden flex-shrink-0">
-                    <PatternChart 
+                  <div className="w-16 h-12 bg-muted/30 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center p-1">
+                    <PatternLineChart 
                       candles={pattern.candles} 
-                      highlightLast={0}
-                      height={64}
+                      isPositive={pattern.signal === "bullish"}
+                      height={40}
                     />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -519,9 +716,10 @@ export function ChartPatternLibrary({ onClose }: ChartPatternLibraryProps) {
                       <span className={cn(
                         "text-xs font-semibold px-2 py-0.5 rounded",
                         pattern.signal === "bullish" && "bg-success/20 text-success",
-                        pattern.signal === "bearish" && "bg-destructive/20 text-destructive"
+                        pattern.signal === "bearish" && "bg-destructive/20 text-destructive",
+                        pattern.signal === "neutral" && "bg-muted text-muted-foreground"
                       )}>
-                        {pattern.signal === "bullish" ? "↑ Bullish" : "↓ Bearish"}
+                        {pattern.signal === "bullish" ? "↑ Bullish" : pattern.signal === "bearish" ? "↓ Bearish" : "↔ Neutral"}
                       </span>
                       <span className="text-xs text-muted-foreground capitalize">
                         {pattern.category}
