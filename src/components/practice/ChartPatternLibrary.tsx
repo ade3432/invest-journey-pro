@@ -584,7 +584,7 @@ export function ChartPatternLibrary({ onClose }: ChartPatternLibraryProps) {
           </div>
 
           <ScrollArea className="flex-1">
-            <div className="space-y-6 pb-6">
+            <div className="space-y-6 pb-24">
               {/* Pattern Chart */}
               <div className="bg-card rounded-2xl border border-border p-4">
                 <PatternChart 
@@ -694,7 +694,7 @@ export function ChartPatternLibrary({ onClose }: ChartPatternLibraryProps) {
 
         {/* Pattern List */}
         <ScrollArea className="flex-1">
-          <div className="space-y-3 pb-6">
+          <div className="space-y-3 pb-24">
             {filteredPatterns.map((pattern, index) => (
               <div
                 key={pattern.id}
