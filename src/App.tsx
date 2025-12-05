@@ -9,6 +9,7 @@ import { BottomNav } from "@/components/navigation/BottomNav";
 import AITutor from "@/components/tutor/AITutor";
 import Index from "./pages/Index";
 import Market from "./pages/Market";
+import CoinDetail from "./pages/CoinDetail";
 import Practice from "./pages/Practice";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
@@ -27,6 +28,7 @@ function AppContent() {
         <Route path="/auth" element={<Auth />} />
         <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
         <Route path="/market" element={<ProtectedRoute><Market /></ProtectedRoute>} />
+        <Route path="/coin/:coinId" element={<ProtectedRoute><CoinDetail /></ProtectedRoute>} />
         <Route path="/practice" element={<ProtectedRoute><Practice /></ProtectedRoute>} />
         <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

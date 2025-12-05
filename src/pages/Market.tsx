@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { TopHeader } from "@/components/navigation/TopHeader";
 import { MarketSentiment } from "@/components/market/MarketSentiment";
 import { CoinCard } from "@/components/market/CoinCard";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 type CryptoTab = "all" | "gainers" | "losers" | "watchlist";
 
 const Market = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { progress: cloudProgress } = useCloudProgress();
   const { progress: localProgress, toggleFavorite } = useUserProgress();
@@ -27,7 +29,6 @@ const Market = () => {
   const [activeTab, setActiveTab] = useState<CryptoTab>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStock, setSelectedStock] = useState<{ symbol: string; price: number } | null>(null);
-  const [selectedCrypto, setSelectedCrypto] = useState<{ symbol: string; price: number } | null>(null);
 
   const filteredCoins = coins.filter((coin) => {
     const matchesSearch =
@@ -153,7 +154,7 @@ const Market = () => {
                     key={coin.id}
                     className="animate-fade-in cursor-pointer"
                     style={{ animationDelay: `${index * 50}ms` }}
-                    onClick={() => setSelectedCrypto({ symbol: coin.symbol, price: coin.current_price })}
+                    onClick={() => navigate(`/coin/${coin.id}`)}
                   >
                     <CoinCard
                       name={coin.name}
@@ -177,17 +178,6 @@ const Market = () => {
                 </div>
               )}
             </div>
-
-            {/* Trade Panel for selected crypto */}
-            {selectedCrypto && user && (
-              <div className="mt-4">
-                <TradePanel
-                  symbol={selectedCrypto.symbol}
-                  currentPrice={selectedCrypto.price}
-                  assetType="crypto"
-                />
-              </div>
-            )}
           </TabsContent>
 
           <TabsContent value="stocks" className="space-y-4">
