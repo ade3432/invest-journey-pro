@@ -103,7 +103,8 @@ const CoinDetail = () => {
     );
   }
 
-  const isPositive = coin.price_change_percentage_24h >= 0;
+  const safeChange = coin.price_change_percentage_24h ?? 0;
+  const isPositive = safeChange >= 0;
   const isFavorite = (progress.favorites || []).includes(coin.id);
 
   return (
@@ -157,7 +158,7 @@ const CoinDetail = () => {
             isPositive ? "text-success" : "text-destructive"
           )}>
             {isPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-            <span>{isPositive ? "+" : ""}{coin.price_change_percentage_24h.toFixed(2)}% (24h)</span>
+            <span>{isPositive ? "+" : ""}{safeChange.toFixed(2)}% (24h)</span>
           </div>
         </div>
 
