@@ -459,6 +459,7 @@ export type Database = {
           daily_progress: number
           hearts: number
           id: string
+          is_premium: boolean
           last_activity_date: string | null
           lessons_completed: number
           level: number
@@ -475,6 +476,7 @@ export type Database = {
           daily_progress?: number
           hearts?: number
           id?: string
+          is_premium?: boolean
           last_activity_date?: string | null
           lessons_completed?: number
           level?: number
@@ -491,6 +493,7 @@ export type Database = {
           daily_progress?: number
           hearts?: number
           id?: string
+          is_premium?: boolean
           last_activity_date?: string | null
           lessons_completed?: number
           level?: number
