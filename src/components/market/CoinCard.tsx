@@ -25,7 +25,8 @@ export function CoinCard({
   onToggleFavorite,
   onClick,
 }: CoinCardProps) {
-  const isPositive = change24h >= 0;
+  const safeChange24h = change24h ?? 0;
+  const isPositive = safeChange24h >= 0;
 
   return (
     <div
@@ -68,7 +69,7 @@ export function CoinCard({
           ) : (
             <TrendingDown className="w-4 h-4" />
           )}
-          <span>{isPositive ? "+" : ""}{change24h.toFixed(2)}%</span>
+          <span>{isPositive ? "+" : ""}{safeChange24h.toFixed(2)}%</span>
         </div>
       </div>
 
