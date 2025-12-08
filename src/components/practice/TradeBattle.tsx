@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Swords, Trophy, TrendingUp, TrendingDown, Users, Coins, Clock } from "lucide-react";
+import { X, Swords, Trophy, TrendingUp, TrendingDown, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface TradeBattleProps {
@@ -12,22 +11,189 @@ interface TradeBattleProps {
   onComplete?: (won: boolean, coinsWon: number) => void;
 }
 
-type BattleState = "setup" | "waiting" | "playing" | "results";
+type BattleState = "setup" | "playing" | "results";
+
+interface PriceCandle {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
 
 interface TradeRound {
   symbol: string;
-  startPrice: number;
-  endPrice: number;
+  name: string;
+  candles: PriceCandle[];
+  nextCandle: PriceCandle;
   direction: "up" | "down";
 }
 
-const TRADE_ROUNDS: TradeRound[] = [
-  { symbol: "BTC", startPrice: 42150, endPrice: 43200, direction: "up" },
-  { symbol: "ETH", startPrice: 2280, endPrice: 2195, direction: "down" },
-  { symbol: "AAPL", startPrice: 178.50, endPrice: 182.30, direction: "up" },
-  { symbol: "TSLA", startPrice: 248.00, endPrice: 235.50, direction: "down" },
-  { symbol: "NVDA", startPrice: 485.00, endPrice: 502.00, direction: "up" },
-];
+// Generate realistic-looking price data
+function generateCandles(basePrice: number, volatility: number, count: number): PriceCandle[] {
+  const candles: PriceCandle[] = [];
+  let currentPrice = basePrice;
+  
+  for (let i = 0; i < count; i++) {
+    const change = (Math.random() - 0.5) * volatility * currentPrice;
+    const open = currentPrice;
+    const close = open + change;
+    const high = Math.max(open, close) + Math.random() * volatility * 0.5 * currentPrice;
+    const low = Math.min(open, close) - Math.random() * volatility * 0.5 * currentPrice;
+    
+    candles.push({ open, high, low, close });
+    currentPrice = close;
+  }
+  
+  return candles;
+}
+
+function generateRound(symbol: string, name: string, basePrice: number, volatility: number): TradeRound {
+  const candles = generateCandles(basePrice, volatility, 12);
+  const lastClose = candles[candles.length - 1].close;
+  
+  // Generate next candle with random direction
+  const direction = Math.random() > 0.5 ? "up" : "down";
+  const movePercent = (0.01 + Math.random() * 0.03) * (direction === "up" ? 1 : -1);
+  const nextClose = lastClose * (1 + movePercent);
+  const nextOpen = lastClose;
+  const nextHigh = Math.max(nextOpen, nextClose) * (1 + Math.random() * 0.01);
+  const nextLow = Math.min(nextOpen, nextClose) * (1 - Math.random() * 0.01);
+  
+  return {
+    symbol,
+    name,
+    candles,
+    nextCandle: { open: nextOpen, high: nextHigh, low: nextLow, close: nextClose },
+    direction
+  };
+}
+
+// Mini candlestick chart component
+function BattleChart({ candles, showNext, nextCandle }: { 
+  candles: PriceCandle[]; 
+  showNext: boolean; 
+  nextCandle?: PriceCandle;
+}) {
+  const allCandles = showNext && nextCandle ? [...candles, nextCandle] : candles;
+  
+  const prices = allCandles.flatMap(c => [c.high, c.low]);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const priceRange = maxPrice - minPrice;
+  
+  const chartHeight = 200;
+  const chartWidth = 320;
+  const candleWidth = showNext ? chartWidth / (candles.length + 1) - 4 : chartWidth / candles.length - 4;
+  
+  const scaleY = (price: number) => {
+    return chartHeight - ((price - minPrice) / priceRange) * (chartHeight - 20) - 10;
+  };
+
+  return (
+    <div className="bg-muted/30 rounded-xl p-4 mb-6">
+      <svg width={chartWidth} height={chartHeight} className="mx-auto">
+        {/* Grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => (
+          <line
+            key={i}
+            x1={0}
+            x2={chartWidth}
+            y1={10 + (chartHeight - 20) * pct}
+            y2={10 + (chartHeight - 20) * pct}
+            stroke="currentColor"
+            strokeOpacity={0.1}
+            strokeDasharray="4,4"
+          />
+        ))}
+        
+        {/* Candles */}
+        {allCandles.map((candle, i) => {
+          const isLastNew = showNext && i === allCandles.length - 1;
+          const x = i * (candleWidth + 4) + candleWidth / 2 + 2;
+          const isGreen = candle.close >= candle.open;
+          const color = isGreen ? "hsl(var(--success))" : "hsl(var(--destructive))";
+          
+          const bodyTop = scaleY(Math.max(candle.open, candle.close));
+          const bodyBottom = scaleY(Math.min(candle.open, candle.close));
+          const bodyHeight = Math.max(bodyBottom - bodyTop, 1);
+          
+          return (
+            <g key={i} className={isLastNew ? "animate-fade-in" : ""}>
+              {/* Wick */}
+              <line
+                x1={x}
+                x2={x}
+                y1={scaleY(candle.high)}
+                y2={scaleY(candle.low)}
+                stroke={color}
+                strokeWidth={1}
+              />
+              {/* Body */}
+              <rect
+                x={x - candleWidth / 2 + 2}
+                y={bodyTop}
+                width={candleWidth - 4}
+                height={bodyHeight}
+                fill={isGreen ? color : color}
+                stroke={color}
+                strokeWidth={1}
+                rx={1}
+              />
+              {/* Highlight for new candle */}
+              {isLastNew && (
+                <rect
+                  x={x - candleWidth / 2}
+                  y={0}
+                  width={candleWidth}
+                  height={chartHeight}
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.1}
+                  rx={4}
+                />
+              )}
+            </g>
+          );
+        })}
+        
+        {/* Question mark for prediction area */}
+        {!showNext && (
+          <g>
+            <rect
+              x={candles.length * (candleWidth + 4)}
+              y={0}
+              width={candleWidth + 4}
+              height={chartHeight}
+              fill="hsl(var(--primary))"
+              fillOpacity={0.1}
+              rx={4}
+              strokeDasharray="4,4"
+              stroke="hsl(var(--primary))"
+              strokeOpacity={0.5}
+            />
+            <text
+              x={candles.length * (candleWidth + 4) + candleWidth / 2 + 2}
+              y={chartHeight / 2}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="hsl(var(--primary))"
+              fontSize={24}
+              fontWeight="bold"
+            >
+              ?
+            </text>
+          </g>
+        )}
+      </svg>
+      
+      {/* Price labels */}
+      <div className="flex justify-between text-xs text-muted-foreground mt-2">
+        <span>${minPrice.toFixed(2)}</span>
+        <span>Last: ${candles[candles.length - 1].close.toFixed(2)}</span>
+        <span>${maxPrice.toFixed(2)}</span>
+      </div>
+    </div>
+  );
+}
 
 export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
   const { user } = useAuth();
@@ -35,15 +201,23 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
   const [state, setState] = useState<BattleState>("setup");
   const [stakes, setStakes] = useState(50);
   const [friendEmail, setFriendEmail] = useState("");
-  const [rounds] = useState(() => [...TRADE_ROUNDS].sort(() => Math.random() - 0.5).slice(0, 5));
+  
+  // Generate random rounds
+  const rounds = useMemo(() => [
+    generateRound("BTC", "Bitcoin", 42000 + Math.random() * 5000, 0.02),
+    generateRound("ETH", "Ethereum", 2200 + Math.random() * 300, 0.025),
+    generateRound("AAPL", "Apple", 175 + Math.random() * 10, 0.015),
+    generateRound("TSLA", "Tesla", 240 + Math.random() * 20, 0.03),
+    generateRound("NVDA", "NVIDIA", 480 + Math.random() * 40, 0.025),
+  ], []);
+  
   const [currentRound, setCurrentRound] = useState(0);
   const [myScore, setMyScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [selected, setSelected] = useState<"up" | "down" | null>(null);
-  const [roundTimer, setRoundTimer] = useState(10);
+  const [roundTimer, setRoundTimer] = useState(15);
 
-  // Simulate opponent (in real app, this would be real-time)
   useEffect(() => {
     if (state === "playing" && !answered && roundTimer > 0) {
       const timer = setInterval(() => {
@@ -67,9 +241,8 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
       return;
     }
 
-    // For demo, start practice battle immediately
     setState("playing");
-    setRoundTimer(10);
+    setRoundTimer(15);
   };
 
   const handleAnswer = (direction: "up" | "down" | null) => {
@@ -84,8 +257,8 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
       setMyScore(prev => prev + 1);
     }
 
-    // Simulate opponent (70% accuracy for challenge)
-    const opponentCorrect = Math.random() > 0.3;
+    // Simulate opponent (60% accuracy)
+    const opponentCorrect = Math.random() > 0.4;
     if (opponentCorrect) {
       setOpponentScore(prev => prev + 1);
     }
@@ -95,11 +268,11 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
         setCurrentRound(prev => prev + 1);
         setAnswered(false);
         setSelected(null);
-        setRoundTimer(10);
+        setRoundTimer(15);
       } else {
         setState("results");
       }
-    }, 2000);
+    }, 2500);
   };
 
   const handleComplete = () => {
@@ -124,7 +297,7 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
           </div>
 
           <p className="text-muted-foreground mb-6">
-            Compete to predict market movements! Winner takes all coins.
+            Analyze charts and predict market movements! Will the next candle go higher or lower?
           </p>
 
           <div className="space-y-4 mb-6">
@@ -163,8 +336,9 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
           <div className="bg-muted/50 rounded-xl p-4 mb-6">
             <h3 className="font-semibold mb-2">How it works:</h3>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• 5 rounds of price predictions</li>
-              <li>• 10 seconds per round</li>
+              <li>• Analyze the price chart pattern</li>
+              <li>• Predict if the next candle goes UP or DOWN</li>
+              <li>• 5 rounds, 15 seconds each</li>
               <li>• Winner takes {stakes * 2} coins</li>
             </ul>
           </div>
@@ -195,8 +369,8 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
               <div className="text-xl font-bold text-primary">{myScore}</div>
             </div>
             <div className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center font-bold",
-              roundTimer <= 3 ? "bg-red-500/20 text-red-500" : "bg-muted"
+              "w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg",
+              roundTimer <= 5 ? "bg-destructive/20 text-destructive animate-pulse" : "bg-muted"
             )}>
               {roundTimer}
             </div>
@@ -206,67 +380,84 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
             </div>
           </div>
 
-          <div className="text-sm">
+          <div className="text-sm font-medium">
             {currentRound + 1}/{rounds.length}
           </div>
         </div>
 
         {/* Game */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="text-center mb-8">
-            <div className="text-4xl font-bold mb-2">{round.symbol}</div>
-            <div className="text-2xl text-muted-foreground">${round.startPrice.toLocaleString()}</div>
+        <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-auto">
+          <div className="text-center mb-4">
+            <div className="text-2xl font-bold">{round.symbol}</div>
+            <div className="text-sm text-muted-foreground">{round.name}</div>
           </div>
 
-          <h2 className="text-xl font-bold text-center mb-8">
-            Will the price go UP or DOWN?
+          {/* Chart */}
+          <BattleChart 
+            candles={round.candles} 
+            showNext={answered} 
+            nextCandle={round.nextCandle}
+          />
+
+          <h2 className="text-lg font-bold text-center mb-6">
+            {answered ? "Result:" : "Where will the next candle go?"}
           </h2>
 
-          <div className="flex gap-4 w-full max-w-md">
+          <div className="flex gap-4 w-full max-w-sm">
             <Button
               variant="outline"
               size="lg"
               className={cn(
-                "flex-1 py-8 text-lg",
-                "hover:border-green-500 hover:bg-green-500/10 hover:text-green-500",
-                selected === "up" && answered && round.direction === "up" && "border-green-500 bg-green-500/20 text-green-500",
-                selected === "up" && answered && round.direction !== "up" && "border-red-500 bg-red-500/20 text-red-500",
-                answered && round.direction === "up" && "border-green-500"
+                "flex-1 py-6 text-lg transition-all",
+                !answered && "hover:border-success hover:bg-success/10 hover:text-success",
+                selected === "up" && answered && round.direction === "up" && "border-success bg-success/20 text-success",
+                selected === "up" && answered && round.direction !== "up" && "border-destructive bg-destructive/20 text-destructive",
+                !selected && answered && round.direction === "up" && "border-success"
               )}
               onClick={() => handleAnswer("up")}
               disabled={answered}
             >
               <TrendingUp className="w-6 h-6 mr-2" />
-              UP
+              Higher
             </Button>
             <Button
               variant="outline"
               size="lg"
               className={cn(
-                "flex-1 py-8 text-lg",
-                "hover:border-red-500 hover:bg-red-500/10 hover:text-red-500",
-                selected === "down" && answered && round.direction === "down" && "border-green-500 bg-green-500/20 text-green-500",
-                selected === "down" && answered && round.direction !== "down" && "border-red-500 bg-red-500/20 text-red-500",
-                answered && round.direction === "down" && "border-green-500"
+                "flex-1 py-6 text-lg transition-all",
+                !answered && "hover:border-destructive hover:bg-destructive/10 hover:text-destructive",
+                selected === "down" && answered && round.direction === "down" && "border-success bg-success/20 text-success",
+                selected === "down" && answered && round.direction !== "down" && "border-destructive bg-destructive/20 text-destructive",
+                !selected && answered && round.direction === "down" && "border-success"
               )}
               onClick={() => handleAnswer("down")}
               disabled={answered}
             >
               <TrendingDown className="w-6 h-6 mr-2" />
-              DOWN
+              Lower
             </Button>
           </div>
 
           {answered && (
-            <div className="mt-8 text-center animate-fade-in">
-              <p className="text-lg">
-                Price moved to <span className="font-bold">${round.endPrice.toLocaleString()}</span>
+            <div className="mt-6 text-center animate-fade-in">
+              <p className="text-lg mb-1">
+                The price moved{" "}
+                <span className={cn(
+                  "font-bold",
+                  round.direction === "up" ? "text-success" : "text-destructive"
+                )}>
+                  {round.direction === "up" ? "higher" : "lower"}
+                </span>
               </p>
               <p className={cn(
-                "font-semibold",
-                selected === round.direction ? "text-green-500" : "text-red-500"
+                "text-xl font-bold",
+                selected === round.direction ? "text-success" : "text-destructive"
               )}>
-                {selected === round.direction ? "Correct!" : "Wrong!"}
+                {selected === null 
+                  ? "Time's up!" 
+                  : selected === round.direction 
+                    ? "✓ Correct!" 
+                    : "✗ Wrong!"}
               </p>
             </div>
           )}
@@ -284,11 +475,11 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
       <div className="bg-card border border-border rounded-3xl p-8 max-w-md w-full text-center animate-fade-in">
         <div className={cn(
           "w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6",
-          won ? "bg-xp/20" : tied ? "bg-muted" : "bg-red-500/20"
+          won ? "bg-xp/20" : tied ? "bg-muted" : "bg-destructive/20"
         )}>
           <Trophy className={cn(
             "w-10 h-10",
-            won ? "text-xp" : tied ? "text-muted-foreground" : "text-red-500"
+            won ? "text-xp" : tied ? "text-muted-foreground" : "text-destructive"
           )} />
         </div>
         
