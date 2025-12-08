@@ -55,7 +55,7 @@ const Index = () => {
   // Use cloud progress if logged in, otherwise local
   const progress = user ? cloudProgress : localProgress;
 
-  // Check premium status
+  // Check premium status from database
   useEffect(() => {
     const checkPremium = async () => {
       if (!user) {
@@ -65,9 +65,14 @@ const Index = () => {
       }
       
       try {
-        const { data, error } = await supabase.functions.invoke('check-premium');
+        const { data, error } = await supabase
+          .from('user_progress')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        
         if (!error && data) {
-          setIsPremium(data.isPremium);
+          setIsPremium((data as any).is_premium || false);
         }
       } catch (error) {
         console.error('Error checking premium:', error);
@@ -176,23 +181,12 @@ const Index = () => {
       return;
     }
     
-    setIsPurchasing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-payment');
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to start checkout. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsPurchasing(false);
-      setShowPaywall(false);
-    }
+    // For now, just close the paywall - IAP happens in Profile page
+    toast({
+      title: "Visit Profile",
+      description: "Go to your Profile page to upgrade to premium.",
+    });
+    setShowPaywall(false);
   };
 
   // Group lessons by module
