@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Swords, Trophy, TrendingUp, TrendingDown, Coins } from "lucide-react";
+import { X, Swords, Trophy, TrendingUp, TrendingDown, Coins, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -20,51 +20,353 @@ interface PriceCandle {
   close: number;
 }
 
+interface ChartPattern {
+  name: string;
+  hint: string;
+  description: string;
+  direction: "up" | "down";
+  generateCandles: (basePrice: number) => PriceCandle[];
+}
+
 interface TradeRound {
   symbol: string;
   name: string;
   candles: PriceCandle[];
   nextCandle: PriceCandle;
   direction: "up" | "down";
+  pattern: ChartPattern;
 }
 
-// Generate realistic-looking price data
-function generateCandles(basePrice: number, volatility: number, count: number): PriceCandle[] {
-  const candles: PriceCandle[] = [];
-  let currentPrice = basePrice;
-  
-  for (let i = 0; i < count; i++) {
-    const change = (Math.random() - 0.5) * volatility * currentPrice;
-    const open = currentPrice;
-    const close = open + change;
-    const high = Math.max(open, close) + Math.random() * volatility * 0.5 * currentPrice;
-    const low = Math.min(open, close) - Math.random() * volatility * 0.5 * currentPrice;
-    
-    candles.push({ open, high, low, close });
-    currentPrice = close;
+// Chart pattern definitions with realistic candle generation
+const CHART_PATTERNS: ChartPattern[] = [
+  {
+    name: "Double Bottom",
+    hint: "Two similar lows with a peak between them - bullish reversal signal",
+    description: "A W-shaped pattern indicating potential upward reversal",
+    direction: "up",
+    generateCandles: (base) => {
+      const candles: PriceCandle[] = [];
+      let price = base;
+      // Downtrend
+      for (let i = 0; i < 3; i++) {
+        const change = -base * (0.015 + Math.random() * 0.01);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      const firstBottom = price;
+      // Bounce up
+      for (let i = 0; i < 2; i++) {
+        const change = base * (0.012 + Math.random() * 0.008);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      // Second drop to similar level
+      for (let i = 0; i < 3; i++) {
+        const change = -base * (0.01 + Math.random() * 0.008);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      // Ensure second bottom is near first
+      const adjustment = firstBottom - price;
+      candles.push(makeCandle(price, price + adjustment * 0.9));
+      price += adjustment * 0.9;
+      // Start of reversal
+      for (let i = 0; i < 2; i++) {
+        const change = base * (0.008 + Math.random() * 0.006);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      return candles.slice(0, 12);
+    }
+  },
+  {
+    name: "Double Top",
+    hint: "Two similar highs with a dip between them - bearish reversal signal",
+    description: "An M-shaped pattern indicating potential downward reversal",
+    direction: "down",
+    generateCandles: (base) => {
+      const candles: PriceCandle[] = [];
+      let price = base;
+      // Uptrend
+      for (let i = 0; i < 3; i++) {
+        const change = base * (0.015 + Math.random() * 0.01);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      const firstTop = price;
+      // Pullback
+      for (let i = 0; i < 2; i++) {
+        const change = -base * (0.012 + Math.random() * 0.008);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      // Second rise to similar level
+      for (let i = 0; i < 3; i++) {
+        const change = base * (0.01 + Math.random() * 0.008);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      // Ensure second top is near first
+      const adjustment = firstTop - price;
+      candles.push(makeCandle(price, price + adjustment * 0.9));
+      price += adjustment * 0.9;
+      // Start of reversal
+      for (let i = 0; i < 2; i++) {
+        const change = -base * (0.008 + Math.random() * 0.006);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      return candles.slice(0, 12);
+    }
+  },
+  {
+    name: "Ascending Triangle",
+    hint: "Flat resistance with rising support - typically bullish breakout",
+    description: "Higher lows pushing toward a horizontal resistance level",
+    direction: "up",
+    generateCandles: (base) => {
+      const candles: PriceCandle[] = [];
+      let price = base;
+      const resistance = base * 1.04;
+      for (let i = 0; i < 12; i++) {
+        const support = base * (0.96 + i * 0.003);
+        if (i % 3 === 0) {
+          // Push toward resistance
+          candles.push(makeCandle(price, resistance * (0.99 + Math.random() * 0.01)));
+          price = resistance * 0.995;
+        } else if (i % 3 === 1) {
+          // Pull back to rising support
+          candles.push(makeCandle(price, support + Math.random() * base * 0.01));
+          price = support + Math.random() * base * 0.01;
+        } else {
+          // Consolidation
+          const change = (Math.random() - 0.4) * base * 0.015;
+          candles.push(makeCandle(price, Math.min(price + change, resistance * 0.99)));
+          price = Math.min(price + change, resistance * 0.99);
+        }
+      }
+      return candles;
+    }
+  },
+  {
+    name: "Descending Triangle",
+    hint: "Flat support with falling resistance - typically bearish breakdown",
+    description: "Lower highs pressing down toward a horizontal support level",
+    direction: "down",
+    generateCandles: (base) => {
+      const candles: PriceCandle[] = [];
+      let price = base;
+      const support = base * 0.96;
+      for (let i = 0; i < 12; i++) {
+        const resistance = base * (1.04 - i * 0.003);
+        if (i % 3 === 0) {
+          // Drop toward support
+          candles.push(makeCandle(price, support * (1.0 + Math.random() * 0.01)));
+          price = support * 1.005;
+        } else if (i % 3 === 1) {
+          // Bounce to falling resistance
+          candles.push(makeCandle(price, resistance - Math.random() * base * 0.01));
+          price = resistance - Math.random() * base * 0.01;
+        } else {
+          // Consolidation
+          const change = (Math.random() - 0.6) * base * 0.015;
+          candles.push(makeCandle(price, Math.max(price + change, support * 1.01)));
+          price = Math.max(price + change, support * 1.01);
+        }
+      }
+      return candles;
+    }
+  },
+  {
+    name: "Bullish Flag",
+    hint: "Sharp rise followed by slight downward consolidation - continuation pattern",
+    description: "A pause in an uptrend before continuing higher",
+    direction: "up",
+    generateCandles: (base) => {
+      const candles: PriceCandle[] = [];
+      let price = base;
+      // Strong upward move (pole)
+      for (let i = 0; i < 4; i++) {
+        const change = base * (0.02 + Math.random() * 0.015);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      // Slight downward consolidation (flag)
+      for (let i = 0; i < 8; i++) {
+        const change = -base * (0.005 + Math.random() * 0.005);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      return candles;
+    }
+  },
+  {
+    name: "Bearish Flag",
+    hint: "Sharp drop followed by slight upward consolidation - continuation pattern",
+    description: "A pause in a downtrend before continuing lower",
+    direction: "down",
+    generateCandles: (base) => {
+      const candles: PriceCandle[] = [];
+      let price = base;
+      // Strong downward move (pole)
+      for (let i = 0; i < 4; i++) {
+        const change = -base * (0.02 + Math.random() * 0.015);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      // Slight upward consolidation (flag)
+      for (let i = 0; i < 8; i++) {
+        const change = base * (0.005 + Math.random() * 0.005);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      return candles;
+    }
+  },
+  {
+    name: "Head and Shoulders",
+    hint: "Three peaks with the middle one highest - bearish reversal signal",
+    description: "Left shoulder, higher head, right shoulder pattern",
+    direction: "down",
+    generateCandles: (base) => {
+      const candles: PriceCandle[] = [];
+      let price = base;
+      // Left shoulder up
+      for (let i = 0; i < 2; i++) {
+        const change = base * (0.015 + Math.random() * 0.01);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      // Left shoulder down
+      candles.push(makeCandle(price, price - base * 0.02));
+      price -= base * 0.02;
+      // Head up (higher than shoulder)
+      for (let i = 0; i < 2; i++) {
+        const change = base * (0.02 + Math.random() * 0.01);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      // Head down
+      for (let i = 0; i < 2; i++) {
+        const change = -base * (0.015 + Math.random() * 0.01);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      // Right shoulder up (lower than head)
+      candles.push(makeCandle(price, price + base * 0.02));
+      price += base * 0.02;
+      // Right shoulder starting down
+      for (let i = 0; i < 2; i++) {
+        const change = -base * (0.01 + Math.random() * 0.005);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      return candles.slice(0, 12);
+    }
+  },
+  {
+    name: "Inverse Head and Shoulders",
+    hint: "Three troughs with the middle one lowest - bullish reversal signal",
+    description: "Left shoulder, lower head, right shoulder inverted pattern",
+    direction: "up",
+    generateCandles: (base) => {
+      const candles: PriceCandle[] = [];
+      let price = base;
+      // Left shoulder down
+      for (let i = 0; i < 2; i++) {
+        const change = -base * (0.015 + Math.random() * 0.01);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      // Left shoulder up
+      candles.push(makeCandle(price, price + base * 0.02));
+      price += base * 0.02;
+      // Head down (lower than shoulder)
+      for (let i = 0; i < 2; i++) {
+        const change = -base * (0.02 + Math.random() * 0.01);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      // Head up
+      for (let i = 0; i < 2; i++) {
+        const change = base * (0.015 + Math.random() * 0.01);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      // Right shoulder down (higher than head)
+      candles.push(makeCandle(price, price - base * 0.02));
+      price -= base * 0.02;
+      // Right shoulder starting up
+      for (let i = 0; i < 2; i++) {
+        const change = base * (0.01 + Math.random() * 0.005);
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      return candles.slice(0, 12);
+    }
+  },
+  {
+    name: "Rising Wedge",
+    hint: "Converging upward trend lines - typically bearish reversal",
+    description: "Both support and resistance rising but converging",
+    direction: "down",
+    generateCandles: (base) => {
+      const candles: PriceCandle[] = [];
+      let price = base;
+      for (let i = 0; i < 12; i++) {
+        const range = base * (0.04 - i * 0.002);
+        const bias = base * 0.005;
+        const change = (Math.random() * range - range * 0.4) + bias;
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      return candles;
+    }
+  },
+  {
+    name: "Falling Wedge",
+    hint: "Converging downward trend lines - typically bullish reversal",
+    description: "Both support and resistance falling but converging",
+    direction: "up",
+    generateCandles: (base) => {
+      const candles: PriceCandle[] = [];
+      let price = base;
+      for (let i = 0; i < 12; i++) {
+        const range = base * (0.04 - i * 0.002);
+        const bias = -base * 0.005;
+        const change = (Math.random() * range - range * 0.6) + bias;
+        candles.push(makeCandle(price, price + change));
+        price += change;
+      }
+      return candles;
+    }
   }
-  
-  return candles;
+];
+
+function makeCandle(open: number, close: number): PriceCandle {
+  const high = Math.max(open, close) * (1 + Math.random() * 0.005);
+  const low = Math.min(open, close) * (1 - Math.random() * 0.005);
+  return { open, high, low, close };
 }
 
-function generateRound(symbol: string, name: string, basePrice: number, volatility: number): TradeRound {
-  const candles = generateCandles(basePrice, volatility, 12);
+function generateRound(symbol: string, name: string, basePrice: number, pattern: ChartPattern): TradeRound {
+  const candles = pattern.generateCandles(basePrice);
   const lastClose = candles[candles.length - 1].close;
   
-  // Generate next candle with random direction
-  const direction = Math.random() > 0.5 ? "up" : "down";
-  const movePercent = (0.01 + Math.random() * 0.03) * (direction === "up" ? 1 : -1);
+  // Generate next candle in the pattern's predicted direction
+  const movePercent = (0.015 + Math.random() * 0.025) * (pattern.direction === "up" ? 1 : -1);
   const nextClose = lastClose * (1 + movePercent);
   const nextOpen = lastClose;
-  const nextHigh = Math.max(nextOpen, nextClose) * (1 + Math.random() * 0.01);
-  const nextLow = Math.min(nextOpen, nextClose) * (1 - Math.random() * 0.01);
+  const nextHigh = Math.max(nextOpen, nextClose) * (1 + Math.random() * 0.008);
+  const nextLow = Math.min(nextOpen, nextClose) * (1 - Math.random() * 0.008);
   
   return {
     symbol,
     name,
     candles,
     nextCandle: { open: nextOpen, high: nextHigh, low: nextLow, close: nextClose },
-    direction
+    direction: pattern.direction,
+    pattern
   };
 }
 
@@ -90,7 +392,7 @@ function BattleChart({ candles, showNext, nextCandle }: {
   };
 
   return (
-    <div className="bg-muted/30 rounded-xl p-4 mb-6">
+    <div className="bg-muted/30 rounded-xl p-4">
       <svg width={chartWidth} height={chartHeight} className="mx-auto">
         {/* Grid lines */}
         {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => (
@@ -201,15 +503,23 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
   const [state, setState] = useState<BattleState>("setup");
   const [stakes, setStakes] = useState(50);
   const [friendEmail, setFriendEmail] = useState("");
+  const [showHint, setShowHint] = useState(false);
   
-  // Generate random rounds
-  const rounds = useMemo(() => [
-    generateRound("BTC", "Bitcoin", 42000 + Math.random() * 5000, 0.02),
-    generateRound("ETH", "Ethereum", 2200 + Math.random() * 300, 0.025),
-    generateRound("AAPL", "Apple", 175 + Math.random() * 10, 0.015),
-    generateRound("TSLA", "Tesla", 240 + Math.random() * 20, 0.03),
-    generateRound("NVDA", "NVIDIA", 480 + Math.random() * 40, 0.025),
-  ], []);
+  // Generate random rounds with different patterns
+  const rounds = useMemo(() => {
+    const symbols = [
+      { symbol: "BTC", name: "Bitcoin", base: 42000 + Math.random() * 5000 },
+      { symbol: "ETH", name: "Ethereum", base: 2200 + Math.random() * 300 },
+      { symbol: "AAPL", name: "Apple", base: 175 + Math.random() * 10 },
+      { symbol: "TSLA", name: "Tesla", base: 240 + Math.random() * 20 },
+      { symbol: "NVDA", name: "NVIDIA", base: 480 + Math.random() * 40 },
+    ];
+    
+    // Shuffle patterns and pick 5
+    const shuffledPatterns = [...CHART_PATTERNS].sort(() => Math.random() - 0.5).slice(0, 5);
+    
+    return symbols.map((s, i) => generateRound(s.symbol, s.name, s.base, shuffledPatterns[i]));
+  }, []);
   
   const [currentRound, setCurrentRound] = useState(0);
   const [myScore, setMyScore] = useState(0);
@@ -243,6 +553,7 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
 
     setState("playing");
     setRoundTimer(15);
+    setShowHint(false);
   };
 
   const handleAnswer = (direction: "up" | "down" | null) => {
@@ -257,8 +568,8 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
       setMyScore(prev => prev + 1);
     }
 
-    // Simulate opponent (60% accuracy)
-    const opponentCorrect = Math.random() > 0.4;
+    // Simulate opponent (55% accuracy - slightly lower since patterns give hints)
+    const opponentCorrect = Math.random() > 0.45;
     if (opponentCorrect) {
       setOpponentScore(prev => prev + 1);
     }
@@ -269,10 +580,11 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
         setAnswered(false);
         setSelected(null);
         setRoundTimer(15);
+        setShowHint(false);
       } else {
         setState("results");
       }
-    }, 2500);
+    }, 3000);
   };
 
   const handleComplete = () => {
@@ -297,7 +609,7 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
           </div>
 
           <p className="text-muted-foreground mb-6">
-            Analyze charts and predict market movements! Will the next candle go higher or lower?
+            Identify chart patterns and predict market movements! Use the hint button if you need help.
           </p>
 
           <div className="space-y-4 mb-6">
@@ -336,7 +648,8 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
           <div className="bg-muted/50 rounded-xl p-4 mb-6">
             <h3 className="font-semibold mb-2">How it works:</h3>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Analyze the price chart pattern</li>
+              <li>• Recognize chart patterns (Double Top, Head & Shoulders, etc.)</li>
+              <li>• Use the hint button to learn what pattern is forming</li>
               <li>• Predict if the next candle goes UP or DOWN</li>
               <li>• 5 rounds, 15 seconds each</li>
               <li>• Winner takes {stakes * 2} coins</li>
@@ -399,7 +712,34 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
             nextCandle={round.nextCandle}
           />
 
-          <h2 className="text-lg font-bold text-center mb-6">
+          {/* Hint Section */}
+          {!answered && (
+            <div className="w-full max-w-sm mt-4">
+              {showHint ? (
+                <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 animate-fade-in">
+                  <div className="flex items-start gap-2">
+                    <Lightbulb className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-primary text-sm">{round.pattern.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{round.pattern.hint}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full text-muted-foreground"
+                  onClick={() => setShowHint(true)}
+                >
+                  <Lightbulb className="w-4 h-4 mr-2" />
+                  Show Pattern Hint
+                </Button>
+              )}
+            </div>
+          )}
+
+          <h2 className="text-lg font-bold text-center my-4">
             {answered ? "Result:" : "Where will the next candle go?"}
           </h2>
 
@@ -440,6 +780,10 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
 
           {answered && (
             <div className="mt-6 text-center animate-fade-in">
+              <div className="bg-muted/50 rounded-xl p-3 mb-3 max-w-sm">
+                <p className="text-sm font-medium text-primary">{round.pattern.name}</p>
+                <p className="text-xs text-muted-foreground">{round.pattern.description}</p>
+              </div>
               <p className="text-lg mb-1">
                 The price moved{" "}
                 <span className={cn(
@@ -519,6 +863,7 @@ export function TradeBattle({ onClose, onComplete }: TradeBattleProps) {
             setOpponentScore(0);
             setAnswered(false);
             setSelected(null);
+            setShowHint(false);
           }}>
             Play Again
           </Button>
