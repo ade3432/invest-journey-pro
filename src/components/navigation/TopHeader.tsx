@@ -11,7 +11,7 @@ interface TopHeaderProps {
 
 export function TopHeader({ streak, hearts, coins }: TopHeaderProps) {
   return (
-    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
+    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50 pt-safe">
       <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
         <div className="flex items-center gap-2">
           <BullMascot size="sm" mood="happy" animate={false} />
