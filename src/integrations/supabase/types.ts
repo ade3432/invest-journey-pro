@@ -461,6 +461,7 @@ export type Database = {
           id: string
           is_premium: boolean
           last_activity_date: string | null
+          last_heart_update: string | null
           lessons_completed: number
           level: number
           streak: number
@@ -478,6 +479,7 @@ export type Database = {
           id?: string
           is_premium?: boolean
           last_activity_date?: string | null
+          last_heart_update?: string | null
           lessons_completed?: number
           level?: number
           streak?: number
@@ -495,6 +497,7 @@ export type Database = {
           id?: string
           is_premium?: boolean
           last_activity_date?: string | null
+          last_heart_update?: string | null
           lessons_completed?: number
           level?: number
           streak?: number
