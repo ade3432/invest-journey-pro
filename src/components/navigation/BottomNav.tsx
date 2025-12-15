@@ -1,12 +1,12 @@
 import { cn } from "@/lib/utils";
 import { NavLink } from "@/components/NavLink";
-import { BookOpen, Target, TrendingUp, Trophy, User } from "lucide-react";
+import { BookOpen, Target, TrendingUp, MessageCircle, User } from "lucide-react";
 
 const navItems = [
   { to: "/", icon: BookOpen, label: "Learn" },
   { to: "/practice", icon: Target, label: "Practice" },
   { to: "/market", icon: TrendingUp, label: "Market" },
-  { to: "/leaderboard", icon: Trophy, label: "Rank" },
+  { to: "/tutor", icon: MessageCircle, label: "AI Tutor" },
   { to: "/profile", icon: User, label: "Profile" },
 ];
 

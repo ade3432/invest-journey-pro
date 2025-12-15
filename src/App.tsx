@@ -6,12 +6,11 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { BottomNav } from "@/components/navigation/BottomNav";
-import AITutor from "@/components/tutor/AITutor";
 import Index from "./pages/Index";
 import Market from "./pages/Market";
 import CoinDetail from "./pages/CoinDetail";
 import Practice from "./pages/Practice";
-import Leaderboard from "./pages/Leaderboard";
+import Tutor from "./pages/Tutor";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -30,12 +29,11 @@ function AppContent() {
         <Route path="/market" element={<ProtectedRoute><Market /></ProtectedRoute>} />
         <Route path="/coin/:coinId" element={<ProtectedRoute><CoinDetail /></ProtectedRoute>} />
         <Route path="/practice" element={<ProtectedRoute><Practice /></ProtectedRoute>} />
-        <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+        <Route path="/tutor" element={<ProtectedRoute><Tutor /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {!hideNav && <BottomNav />}
-      {!hideNav && <AITutor />}
     </div>
   );
 }
