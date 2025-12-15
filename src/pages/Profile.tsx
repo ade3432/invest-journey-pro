@@ -7,7 +7,7 @@ import { useInAppPurchases } from "@/hooks/useInAppPurchases";
 import { StatCard } from "@/components/profile/StatCard";
 import { AchievementBadge } from "@/components/profile/AchievementBadge";
 import { BullMascot } from "@/components/mascot/BullMascot";
-import { Zap, Flame, BookOpen, Target, Settings, Moon, Sun, LogOut, LogIn, Crown, Loader2, RotateCcw, Heart, Coins } from "lucide-react";
+import { Zap, Flame, BookOpen, Target, Settings, Moon, Sun, LogOut, LogIn, Crown, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -23,7 +23,7 @@ const achievements = [
 
 const Profile = () => {
   const { user, signOut } = useAuth();
-  const { progress: cloudProgress, buyHearts, getTimeUntilNextHeart, MAX_HEARTS, HEARTS_REFILL_COST } = useCloudProgress();
+  const { progress: cloudProgress } = useCloudProgress();
   const { progress: localProgress } = useUserProgress();
   const progress = user ? cloudProgress : localProgress;
   const navigate = useNavigate();
@@ -32,65 +32,11 @@ const Profile = () => {
   
   const [isDark, setIsDark] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const [isBuyingHearts, setIsBuyingHearts] = useState(false);
-  const [nextHeartTime, setNextHeartTime] = useState<string | null>(null);
 
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
   }, []);
-
-  // Update next heart timer
-  useEffect(() => {
-    const updateTimer = () => {
-      const remaining = getTimeUntilNextHeart();
-      if (remaining === null) {
-        setNextHeartTime(null);
-      } else {
-        const minutes = Math.ceil(remaining / 60000);
-        setNextHeartTime(`${minutes}m`);
-      }
-    };
-    
-    updateTimer();
-    const interval = setInterval(updateTimer, 60000); // Update every minute
-    return () => clearInterval(interval);
-  }, [getTimeUntilNextHeart, progress.hearts]);
-
-  const handleBuyHearts = async () => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-    
-    if (progress.hearts >= MAX_HEARTS) {
-      toast({
-        title: "Hearts Full",
-        description: "You already have maximum hearts!",
-      });
-      return;
-    }
-    
-    if (progress.coins < HEARTS_REFILL_COST) {
-      toast({
-        title: "Not Enough Coins",
-        description: `You need ${HEARTS_REFILL_COST} coins to buy hearts.`,
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsBuyingHearts(true);
-    const success = await buyHearts();
-    setIsBuyingHearts(false);
-    
-    if (success) {
-      toast({
-        title: "Hearts Refilled!",
-        description: `You now have ${MAX_HEARTS} hearts.`,
-      });
-    }
-  };
 
   const toggleTheme = () => {
     document.documentElement.classList.toggle("dark");
@@ -157,46 +103,6 @@ const Profile = () => {
           {user && (
             <p className="text-xs text-muted-foreground mt-1">{user.email}</p>
         )}
-
-        {/* Hearts Section */}
-        <div className="bg-card rounded-2xl border border-border p-4 mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Heart className="w-5 h-5 text-destructive fill-destructive" />
-              <h3 className="font-bold text-foreground">Hearts</h3>
-            </div>
-            <div className="flex items-center gap-1">
-              {Array.from({ length: MAX_HEARTS }).map((_, i) => (
-                <Heart 
-                  key={i} 
-                  className={`w-5 h-5 ${i < progress.hearts ? 'text-destructive fill-destructive' : 'text-muted-foreground/30'}`} 
-                />
-              ))}
-            </div>
-          </div>
-          
-          {progress.hearts < MAX_HEARTS && nextHeartTime && (
-            <p className="text-sm text-muted-foreground mb-3">
-              Next heart in: {nextHeartTime}
-            </p>
-          )}
-          
-          <Button 
-            className="w-full"
-            variant={progress.hearts < MAX_HEARTS ? "default" : "outline"}
-            onClick={handleBuyHearts}
-            disabled={isBuyingHearts || progress.hearts >= MAX_HEARTS}
-          >
-            {isBuyingHearts ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <Coins className="w-4 h-4 mr-2" />
-            )}
-            {progress.hearts >= MAX_HEARTS 
-              ? "Hearts Full" 
-              : `Buy 5 Hearts - ${HEARTS_REFILL_COST} Coins`}
-          </Button>
-        </div>
         </div>
 
         {/* Auth Actions */}
