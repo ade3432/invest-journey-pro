@@ -145,7 +145,7 @@ export default function AITutor() {
                 <Sparkles className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm">TradeUp AI Tutor</h3>
+                <h3 className="font-semibold text-sm">TradeQuest AI Tutor</h3>
                 <p className="text-xs text-muted-foreground">Ask me anything about trading</p>
               </div>
             </div>

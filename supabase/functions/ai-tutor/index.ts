@@ -8,7 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const systemPrompt = `You are TradeUp AI, an expert trading tutor and mentor. Your role is to help users learn about:
+const systemPrompt = `You are TradeQuest AI, an expert trading tutor and mentor. Your role is to help users learn about:
 - Stock market fundamentals (how markets work, order types, market hours)
 - Cryptocurrency basics (blockchain, wallets, exchanges)
 - Technical analysis (chart patterns, indicators like RSI, MACD, moving averages)

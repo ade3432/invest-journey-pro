@@ -15,7 +15,7 @@ export function TopHeader({ streak, hearts, coins }: TopHeaderProps) {
       <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
         <div className="flex items-center gap-2">
           <BullMascot size="sm" mood="happy" animate={false} />
-          <span className="font-bold text-lg text-foreground">TradeUp</span>
+          <span className="font-bold text-lg text-foreground">TradeQuest</span>
         </div>
         <div className="flex items-center gap-2">
           <StreakCounter streak={streak} />
