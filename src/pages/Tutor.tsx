@@ -2,10 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2, Bot, User, Sparkles } from "lucide-react";
+import { Send, Loader2, Bot, User, Sparkles, Crown, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TopHeader } from "@/components/navigation/TopHeader";
 import { useCloudProgress } from "@/hooks/useCloudProgress";
+import { useInAppPurchases } from "@/hooks/useInAppPurchases";
+import { PremiumModal } from "@/components/premium/PremiumModal";
 
 interface Message {
   role: "user" | "assistant";
@@ -25,6 +27,8 @@ const quickQuestions = [
 
 export default function Tutor() {
   const { progress } = useCloudProgress();
+  const { isPremium, isLoading: isPremiumLoading } = useInAppPurchases();
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -118,6 +122,56 @@ export default function Tutor() {
     e.preventDefault();
     sendMessage(input);
   };
+
+  // Show premium paywall if not premium
+  if (!isPremiumLoading && !isPremium) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col pb-24">
+        <TopHeader 
+          streak={progress.streak} 
+          hearts={progress.hearts} 
+          coins={progress.coins} 
+        />
+        
+        <div className="flex-1 flex flex-col items-center justify-center max-w-lg mx-auto w-full px-4">
+          <div className="text-center space-y-6">
+            <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto">
+              <div className="relative">
+                <Sparkles className="w-10 h-10 text-primary" />
+                <Lock className="w-5 h-5 absolute -bottom-1 -right-1 text-amber-500" />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold">AI Trading Tutor</h1>
+              <p className="text-muted-foreground">
+                Get personalized trading education from your AI tutor. Ask questions, learn strategies, and master the markets.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-r from-amber-500/10 to-primary/10 border border-amber-500/30 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center gap-2 justify-center">
+                <Crown className="w-5 h-5 text-amber-500" />
+                <span className="font-semibold">Premium Feature</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Unlock the AI Tutor and all premium features with a subscription.
+              </p>
+              <Button 
+                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
+                onClick={() => setShowPremiumModal(true)}
+              >
+                <Crown className="w-4 h-4 mr-2" />
+                Unlock Premium
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <PremiumModal open={showPremiumModal} onOpenChange={setShowPremiumModal} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-24">

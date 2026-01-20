@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { MessageCircle, X, Send, Loader2, Bot, User, Sparkles } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Bot, User, Sparkles, Crown, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useInAppPurchases } from "@/hooks/useInAppPurchases";
+import { PremiumModal } from "@/components/premium/PremiumModal";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -23,7 +25,9 @@ const quickQuestions = [
 
 export default function AITutor() {
   const { user } = useAuth();
+  const { isPremium } = useInAppPurchases();
   const [isOpen, setIsOpen] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -118,13 +122,21 @@ export default function AITutor() {
     sendMessage(input);
   };
 
+  const handleOpenChat = () => {
+    if (!isPremium) {
+      setShowPremiumModal(true);
+    } else {
+      setIsOpen(true);
+    }
+  };
+
   if (!user) return null;
 
   return (
     <>
       {/* Floating Button */}
       <Button
-        onClick={() => setIsOpen(true)}
+        onClick={handleOpenChat}
         className={cn(
           "fixed bottom-24 right-4 z-50 h-14 w-14 rounded-full shadow-lg",
           "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70",
@@ -132,11 +144,18 @@ export default function AITutor() {
         )}
         size="icon"
       >
-        <MessageCircle className="h-6 w-6" />
+        {isPremium ? (
+          <MessageCircle className="h-6 w-6" />
+        ) : (
+          <div className="relative">
+            <MessageCircle className="h-6 w-6" />
+            <Lock className="h-3 w-3 absolute -top-1 -right-1 text-amber-400" />
+          </div>
+        )}
       </Button>
 
       {/* Chat Panel */}
-      {isOpen && (
+      {isOpen && isPremium && (
         <Card className="fixed bottom-24 right-4 z-50 w-[360px] h-[500px] flex flex-col shadow-2xl border-border/50">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/10 to-transparent">
@@ -239,6 +258,9 @@ export default function AITutor() {
           </form>
         </Card>
       )}
+
+      {/* Premium Modal */}
+      <PremiumModal open={showPremiumModal} onOpenChange={setShowPremiumModal} />
     </>
   );
 }
