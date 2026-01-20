@@ -216,6 +216,7 @@ const Index = () => {
         xpReward={activeLesson.xp_reward}
         coinReward={activeLesson.coin_reward}
         hearts={progress.hearts}
+        isPremium={isPremium}
         onComplete={handleLessonComplete}
         onClose={() => setActiveLesson(null)}
         onLoseHeart={user ? loseHeart : () => {}}
@@ -228,7 +229,8 @@ const Index = () => {
       <TopHeader 
         streak={progress.streak} 
         hearts={progress.hearts} 
-        coins={progress.coins} 
+        coins={progress.coins}
+        isPremium={isPremium}
       />
       
       <main className="max-w-lg mx-auto px-4 py-6">

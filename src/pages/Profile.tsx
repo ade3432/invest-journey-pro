@@ -85,6 +85,7 @@ const Profile = () => {
         streak={progress.streak}
         hearts={progress.hearts}
         coins={progress.coins}
+        isPremium={isPremium}
       />
 
       <main className="max-w-lg mx-auto px-4 py-6">

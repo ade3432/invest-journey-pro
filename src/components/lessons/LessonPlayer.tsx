@@ -29,6 +29,7 @@ interface LessonPlayerProps {
   xpReward: number;
   coinReward: number;
   hearts: number;
+  isPremium?: boolean;
   onComplete: (correct: number, total: number) => void;
   onClose: () => void;
   onLoseHeart: () => void;
@@ -40,6 +41,7 @@ export default function LessonPlayer({
   xpReward,
   coinReward,
   hearts,
+  isPremium = false,
   onComplete,
   onClose,
   onLoseHeart,
@@ -55,8 +57,8 @@ export default function LessonPlayer({
   const handleAnswer = (correct: boolean) => {
     if (correct) {
       setCorrectAnswers(prev => prev + 1);
-    } else {
-      // Lose a heart on wrong answer
+    } else if (!isPremium) {
+      // Only lose heart if not premium
       if (currentHearts > 0) {
         setCurrentHearts(prev => prev - 1);
         onLoseHeart();
@@ -192,8 +194,8 @@ export default function LessonPlayer({
           </Button>
           <h1 className="font-semibold">{lessonTitle}</h1>
           <div className="flex items-center gap-1">
-            <Heart className={cn("w-5 h-5", currentHearts > 0 ? "text-red-500 fill-red-500" : "text-muted")} />
-            <span className="font-bold">{currentHearts}</span>
+            <Heart className={cn("w-5 h-5", isPremium || currentHearts > 0 ? "text-red-500 fill-red-500" : "text-muted")} />
+            <span className="font-bold">{isPremium ? "∞" : currentHearts}</span>
           </div>
         </div>
         <Progress value={progress} className="h-2" />

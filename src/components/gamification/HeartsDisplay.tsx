@@ -11,10 +11,11 @@ import { useToast } from "@/hooks/use-toast";
 interface HeartsDisplayProps {
   hearts: number;
   maxHearts?: number;
+  isPremium?: boolean;
   className?: string;
 }
 
-export function HeartsDisplay({ hearts, maxHearts = 5, className }: HeartsDisplayProps) {
+export function HeartsDisplay({ hearts, maxHearts = 5, isPremium = false, className }: HeartsDisplayProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -75,6 +76,19 @@ export function HeartsDisplay({ hearts, maxHearts = 5, className }: HeartsDispla
       setIsOpen(false);
     }
   };
+
+  // Premium users have unlimited hearts
+  if (isPremium) {
+    return (
+      <div className={cn(
+        "flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-hearts/20",
+        className
+      )}>
+        <Heart className="w-5 h-5 text-hearts fill-hearts" />
+        <span className="font-bold text-hearts">∞</span>
+      </div>
+    );
+  }
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
