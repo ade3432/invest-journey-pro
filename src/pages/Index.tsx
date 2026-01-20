@@ -12,7 +12,7 @@ import LessonCard from "@/components/lessons/LessonCard";
 import LessonPlayer from "@/components/lessons/LessonPlayer";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, Loader2, Crown, Lock } from "lucide-react";
+import { LogIn, Loader2, Crown, Lock, Heart, Coins } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,7 @@ const FREE_LESSONS_COUNT = 3; // First 3 lessons are free
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
-  const { progress: cloudProgress, loading: progressLoading, addXP, addCoins, loseHeart, incrementDailyProgress } = useCloudProgress();
+  const { progress: cloudProgress, loading: progressLoading, addXP, addCoins, loseHeart, incrementDailyProgress, buyHearts, HEARTS_REFILL_COST, MAX_HEARTS } = useCloudProgress();
   const { progress: localProgress } = useUserProgress();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -50,6 +50,8 @@ const Index = () => {
   const [isPremium, setIsPremium] = useState(false);
   const [premiumLoading, setPremiumLoading] = useState(true);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showNoHeartsDialog, setShowNoHeartsDialog] = useState(false);
+  const [pendingLesson, setPendingLesson] = useState<{ lesson: Lesson; globalIndex: number } | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
 
   // Use cloud progress if logged in, otherwise local
@@ -172,7 +174,36 @@ const Index = () => {
       return;
     }
     
+    // Check if user has hearts (premium users have unlimited)
+    if (!isPremium && progress.hearts <= 0) {
+      setPendingLesson({ lesson, globalIndex });
+      setShowNoHeartsDialog(true);
+      return;
+    }
+    
     setActiveLesson(lesson);
+  };
+
+  const handleBuyHearts = async () => {
+    const success = await buyHearts();
+    if (success) {
+      setShowNoHeartsDialog(false);
+      // Start the pending lesson after buying hearts
+      if (pendingLesson) {
+        setActiveLesson(pendingLesson.lesson);
+        setPendingLesson(null);
+      }
+      toast({
+        title: "Hearts Restored!",
+        description: `You now have ${MAX_HEARTS} hearts`,
+      });
+    } else {
+      toast({
+        title: "Not Enough Coins",
+        description: `You need ${HEARTS_REFILL_COST} coins to buy hearts`,
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePurchasePremium = async () => {
@@ -335,6 +366,49 @@ const Index = () => {
         </div>
       </main>
 
+      {/* No Hearts Dialog */}
+      <Dialog open={showNoHeartsDialog} onOpenChange={setShowNoHeartsDialog}>
+        <DialogContent className="max-w-sm mx-4">
+          <DialogHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+              <Heart className="w-8 h-8 text-red-500" />
+            </div>
+            <DialogTitle className="text-xl">Out of Hearts!</DialogTitle>
+            <DialogDescription className="text-center">
+              You need hearts to start a lesson. Buy hearts with coins or wait for them to refill.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="bg-muted/50 rounded-xl p-4 text-center">
+              <p className="text-sm text-muted-foreground mb-1">Your Coins</p>
+              <div className="flex items-center justify-center gap-2">
+                <Coins className="w-5 h-5 text-amber-500" />
+                <span className="font-bold text-lg">{progress.coins}</span>
+              </div>
+            </div>
+            <Button 
+              className="w-full bg-red-500 hover:bg-red-600 text-white"
+              onClick={handleBuyHearts}
+              disabled={progress.coins < HEARTS_REFILL_COST}
+            >
+              <Heart className="w-4 h-4 mr-2 fill-white" />
+              Buy {MAX_HEARTS} Hearts for {HEARTS_REFILL_COST} Coins
+            </Button>
+            {progress.coins < HEARTS_REFILL_COST && (
+              <p className="text-xs text-center text-muted-foreground">
+                You need {HEARTS_REFILL_COST - progress.coins} more coins
+              </p>
+            )}
+            <Button variant="ghost" className="w-full" onClick={() => {
+              setShowNoHeartsDialog(false);
+              setPendingLesson(null);
+            }}>
+              Wait for Hearts to Refill
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Premium Paywall Dialog */}
       <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
         <DialogContent className="max-w-sm mx-4">
@@ -358,8 +432,8 @@ const Index = () => {
                 <span>Access advanced content</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Lock className="w-4 h-4 text-primary" />
-                <span>Premium support</span>
+                <Heart className="w-4 h-4 text-primary fill-primary" />
+                <span>Unlimited hearts</span>
               </div>
             </div>
             <Button 
