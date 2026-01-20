@@ -368,41 +368,54 @@ const Index = () => {
 
       {/* No Hearts Dialog */}
       <Dialog open={showNoHeartsDialog} onOpenChange={setShowNoHeartsDialog}>
-        <DialogContent className="max-w-sm mx-4">
-          <DialogHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
-              <Heart className="w-8 h-8 text-red-500" />
+        <DialogContent className="max-w-xs sm:max-w-sm mx-auto rounded-3xl border-none bg-card p-0 overflow-hidden">
+          <div className="bg-gradient-to-b from-red-500/20 to-transparent pt-8 pb-4 px-6">
+            <div className="mx-auto w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mb-4 ring-4 ring-red-500/10">
+              <Heart className="w-10 h-10 text-red-500" />
             </div>
-            <DialogTitle className="text-xl">Out of Hearts!</DialogTitle>
-            <DialogDescription className="text-center">
-              You need hearts to start a lesson. Buy hearts with coins or wait for them to refill.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <div className="bg-muted/50 rounded-xl p-4 text-center">
-              <p className="text-sm text-muted-foreground mb-1">Your Coins</p>
+            <DialogHeader className="text-center space-y-2">
+              <DialogTitle className="text-2xl font-bold">Out of Hearts!</DialogTitle>
+              <DialogDescription className="text-center text-muted-foreground">
+                You need hearts to continue learning. Refill now or wait for them to regenerate.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          
+          <div className="px-6 pb-6 space-y-4">
+            <div className="bg-muted/30 rounded-2xl p-4 text-center border border-border/50">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Your Balance</p>
               <div className="flex items-center justify-center gap-2">
-                <Coins className="w-5 h-5 text-amber-500" />
-                <span className="font-bold text-lg">{progress.coins}</span>
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <Coins className="w-4 h-4 text-amber-500" />
+                </div>
+                <span className="font-bold text-2xl">{progress.coins}</span>
+                <span className="text-muted-foreground text-sm">coins</span>
               </div>
             </div>
+            
             <Button 
-              className="w-full bg-red-500 hover:bg-red-600 text-white"
+              className="w-full h-12 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-semibold shadow-lg shadow-red-500/25"
               onClick={handleBuyHearts}
               disabled={progress.coins < HEARTS_REFILL_COST}
             >
-              <Heart className="w-4 h-4 mr-2 fill-white" />
-              Buy {MAX_HEARTS} Hearts for {HEARTS_REFILL_COST} Coins
+              <Heart className="w-5 h-5 mr-2 fill-white" />
+              Get {MAX_HEARTS} Hearts for {HEARTS_REFILL_COST} Coins
             </Button>
+            
             {progress.coins < HEARTS_REFILL_COST && (
               <p className="text-xs text-center text-muted-foreground">
-                You need {HEARTS_REFILL_COST - progress.coins} more coins
+                You need <span className="font-semibold text-foreground">{HEARTS_REFILL_COST - progress.coins}</span> more coins
               </p>
             )}
-            <Button variant="ghost" className="w-full" onClick={() => {
-              setShowNoHeartsDialog(false);
-              setPendingLesson(null);
-            }}>
+            
+            <Button 
+              variant="ghost" 
+              className="w-full h-10 rounded-xl text-muted-foreground hover:text-foreground" 
+              onClick={() => {
+                setShowNoHeartsDialog(false);
+                setPendingLesson(null);
+              }}
+            >
               Wait for Hearts to Refill
             </Button>
           </div>
