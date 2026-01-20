@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopHeader } from "@/components/navigation/TopHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,9 +8,9 @@ import { useInAppPurchases } from "@/hooks/useInAppPurchases";
 import { StatCard } from "@/components/profile/StatCard";
 import { AchievementBadge } from "@/components/profile/AchievementBadge";
 import { BullMascot } from "@/components/mascot/BullMascot";
+import { PremiumModal } from "@/components/premium/PremiumModal";
 import { Zap, Flame, BookOpen, Target, Settings, Moon, Sun, LogOut, LogIn, Crown, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 const achievements = [
@@ -32,6 +33,7 @@ const Profile = () => {
   
   const [isDark, setIsDark] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains("dark");
@@ -51,12 +53,12 @@ const Profile = () => {
     });
   };
 
-  const handlePurchasePremium = async () => {
+  const handlePurchasePremium = () => {
     if (!user) {
       navigate('/auth');
       return;
     }
-    await purchasePremium();
+    setShowPremiumModal(true);
   };
 
   const handleRestorePurchases = async () => {
@@ -260,6 +262,12 @@ const Profile = () => {
           </div>
         </div>
       </main>
+
+      {/* Premium Modal */}
+      <PremiumModal 
+        open={showPremiumModal} 
+        onOpenChange={setShowPremiumModal} 
+      />
     </div>
   );
 };
