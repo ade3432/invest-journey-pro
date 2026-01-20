@@ -49,6 +49,7 @@ export default function LessonPlayer({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [isOutOfHearts, setIsOutOfHearts] = useState(false);
   const [currentHearts, setCurrentHearts] = useState(hearts);
 
   const progress = ((currentIndex) / questions.length) * 100;
@@ -59,9 +60,14 @@ export default function LessonPlayer({
       setCorrectAnswers(prev => prev + 1);
     } else if (!isPremium) {
       // Only lose heart if not premium
-      if (currentHearts > 0) {
-        setCurrentHearts(prev => prev - 1);
-        onLoseHeart();
+      const newHearts = currentHearts - 1;
+      setCurrentHearts(newHearts);
+      onLoseHeart();
+      
+      // Check if out of hearts
+      if (newHearts <= 0) {
+        setIsOutOfHearts(true);
+        return; // Don't proceed to next question
       }
     }
 
@@ -132,6 +138,30 @@ export default function LessonPlayer({
         return null;
     }
   };
+
+  // Out of hearts screen
+  if (isOutOfHearts) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-border/50">
+          <CardContent className="p-8 text-center space-y-6">
+            <div className="w-20 h-20 rounded-full bg-red-500/20 mx-auto flex items-center justify-center">
+              <Heart className="w-10 h-10 text-red-500" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">Out of Hearts!</h2>
+              <p className="text-muted-foreground mt-2">
+                You've run out of hearts. Wait for them to refill or purchase more to continue learning.
+              </p>
+            </div>
+            <Button className="w-full" onClick={onClose}>
+              Return to Lessons
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isComplete) {
     const passed = correctAnswers >= questions.length * 0.7;
