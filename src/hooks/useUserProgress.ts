@@ -28,12 +28,12 @@ const DEFAULT_PROGRESS: UserProgress = {
 
 export function useUserProgress() {
   const [progress, setProgress] = useState<UserProgress>(() => {
-    const saved = localStorage.getItem("tradeup-progress");
+    const saved = localStorage.getItem("tradequest-progress");
     return saved ? JSON.parse(saved) : DEFAULT_PROGRESS;
   });
 
   useEffect(() => {
-    localStorage.setItem("tradeup-progress", JSON.stringify(progress));
+    localStorage.setItem("tradequest-progress", JSON.stringify(progress));
   }, [progress]);
 
   const addXP = (amount: number) => {

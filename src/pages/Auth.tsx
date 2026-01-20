@@ -133,7 +133,7 @@ export default function Auth() {
   } else {
     toast({
       title: "Account created!",
-      description: "Welcome to TradeUp! Start your trading journey.",
+      description: "Welcome to TradeQuest! Start your trading journey.",
     });
     navigate("/");
   }
@@ -227,7 +227,7 @@ const handleAppleSignIn = async () => {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            <span className="text-sm text-primary font-medium">TradeUp</span>
+            <span className="text-sm text-primary font-medium">TradeQuest</span>
           </div>
           <h1 className="text-3xl font-bold text-foreground">
             {authMode === "signin" ? "Welcome back!" : "Create account"}
