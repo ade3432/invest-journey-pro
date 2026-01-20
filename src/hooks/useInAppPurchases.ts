@@ -4,9 +4,12 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-// RevenueCat offering identifier - configure in RevenueCat dashboard
-export const PREMIUM_OFFERING_ID = 'default';
-export const PREMIUM_PACKAGE_ID = 'premium';
+// Product IDs - configure these in App Store Connect
+export const PRODUCT_IDS = {
+  MONTHLY: 'premium_monthly',
+  QUARTERLY: 'premium_quarterly',
+  YEARLY: 'premium_yearly',
+} as const;
 
 interface PurchaseState {
   isPremium: boolean;
@@ -93,8 +96,8 @@ export const useInAppPurchases = () => {
     }
   }, [user]);
 
-  // Purchase premium
-  const purchasePremium = useCallback(async () => {
+  // Purchase premium with specific product ID
+  const purchasePremium = useCallback(async (productId?: string) => {
     if (!user) {
       toast({
         title: 'Sign in required',
@@ -108,6 +111,7 @@ export const useInAppPurchases = () => {
 
     try {
       if (!Capacitor.isNativePlatform()) {
+        // For web preview, show a message but simulate success for testing
         toast({
           title: 'Native only',
           description: 'In-App Purchases are only available in the iOS/Android app.',
@@ -122,25 +126,28 @@ export const useInAppPurchases = () => {
         throw new Error('Purchases not available');
       }
 
-      // Get offerings from RevenueCat
+      // Use the specified product ID or default to monthly
+      const targetProductId = productId || PRODUCT_IDS.MONTHLY;
+
+      // Get offerings and find the product
       const { offerings } = await Purchases.getOfferings();
 
       if (!offerings.current?.availablePackages?.length) {
         throw new Error('No products available');
       }
 
-      // Find the premium package
-      const premiumPackage = offerings.current.availablePackages.find(
-        pkg => pkg.identifier === PREMIUM_PACKAGE_ID || pkg.identifier === '$rc_lifetime'
+      // Find package matching our target product ID
+      const targetPackage = offerings.current.availablePackages.find(
+        pkg => pkg.identifier === targetProductId || pkg.product?.identifier === targetProductId
       ) || offerings.current.availablePackages[0];
 
-      if (!premiumPackage) {
-        throw new Error('Premium package not found');
+      if (!targetPackage) {
+        throw new Error('Product not available');
       }
 
       // Make purchase
       const { purchaserInfo } = await Purchases.purchasePackage({
-        identifier: premiumPackage.identifier,
+        identifier: targetPackage.identifier,
         offeringIdentifier: offerings.current.identifier,
       });
 
