@@ -55,8 +55,13 @@ export default function LessonPlayer({
   const handleAnswer = (correct: boolean) => {
     if (correct) {
       setCorrectAnswers(prev => prev + 1);
+    } else {
+      // Lose a heart on wrong answer
+      if (currentHearts > 0) {
+        setCurrentHearts(prev => prev - 1);
+        onLoseHeart();
+      }
     }
-    // No longer lose hearts or kick out on wrong answers
 
     setTimeout(() => {
       if (currentIndex + 1 >= questions.length) {
