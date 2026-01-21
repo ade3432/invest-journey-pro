@@ -1,4 +1,6 @@
 import { TopHeader } from "@/components/navigation/TopHeader";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCloudProgress } from "@/hooks/useCloudProgress";
 import { useUserProgress } from "@/hooks/useUserProgress";
 import { Button } from "@/components/ui/button";
 import { Target, Zap, Clock, RefreshCw, TrendingUp, TrendingDown, BarChart3, Swords, BookOpen } from "lucide-react";
@@ -15,7 +17,12 @@ import { ChartPatternLibrary } from "@/components/practice/ChartPatternLibrary";
 type ActiveChallenge = "quiz" | "chart" | "pattern" | "battle" | "patterns-library" | null;
 
 const Practice = () => {
-  const { progress, addXP, addCoins } = useUserProgress();
+  const { user } = useAuth();
+  const { progress: cloudProgress, addXP: addCloudXP, addCoins: addCloudCoins } = useCloudProgress();
+  const { progress: localProgress, addXP: addLocalXP, addCoins: addLocalCoins } = useUserProgress();
+  const progress = user ? cloudProgress : localProgress;
+  const addXP = user ? addCloudXP : addLocalXP;
+  const addCoins = user ? addCloudCoins : addLocalCoins;
   const { toast } = useToast();
   const [predictionResult, setPredictionResult] = useState<"up" | "down" | null>(null);
   const [activeChallenge, setActiveChallenge] = useState<ActiveChallenge>(null);

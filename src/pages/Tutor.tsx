@@ -5,7 +5,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Loader2, Bot, User, Sparkles, Crown, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TopHeader } from "@/components/navigation/TopHeader";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCloudProgress } from "@/hooks/useCloudProgress";
+import { useUserProgress } from "@/hooks/useUserProgress";
 import { useInAppPurchases } from "@/hooks/useInAppPurchases";
 import { PremiumModal } from "@/components/premium/PremiumModal";
 
@@ -26,7 +28,10 @@ const quickQuestions = [
 ];
 
 export default function Tutor() {
-  const { progress } = useCloudProgress();
+  const { user } = useAuth();
+  const { progress: cloudProgress } = useCloudProgress();
+  const { progress: localProgress } = useUserProgress();
+  const progress = user ? cloudProgress : localProgress;
   const { isPremium, isLoading: isPremiumLoading } = useInAppPurchases();
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
