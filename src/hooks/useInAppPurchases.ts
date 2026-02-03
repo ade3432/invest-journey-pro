@@ -68,8 +68,8 @@ export const useInAppPurchases = () => {
     }
 
     try {
-      const purchasesModule = await import('capacitor-purchases');
-      return purchasesModule.CapacitorPurchases;
+      const { Purchases } = await import('@revenuecat/purchases-capacitor');
+      return Purchases;
     } catch (error) {
       console.error('Failed to initialize purchases:', error);
       return null;
@@ -130,29 +130,28 @@ export const useInAppPurchases = () => {
       const targetProductId = productId || PRODUCT_IDS.MONTHLY;
 
       // Get offerings and find the product
-      const { offerings } = await Purchases.getOfferings();
+      const offeringsResult = await Purchases.getOfferings();
 
-      if (!offerings.current?.availablePackages?.length) {
+      if (!offeringsResult.current?.availablePackages?.length) {
         throw new Error('No products available');
       }
 
       // Find package matching our target product ID
-      const targetPackage = offerings.current.availablePackages.find(
+      const targetPackage = offeringsResult.current.availablePackages.find(
         pkg => pkg.identifier === targetProductId || pkg.product?.identifier === targetProductId
-      ) || offerings.current.availablePackages[0];
+      ) || offeringsResult.current.availablePackages[0];
 
       if (!targetPackage) {
         throw new Error('Product not available');
       }
 
       // Make purchase
-      const { purchaserInfo } = await Purchases.purchasePackage({
-        identifier: targetPackage.identifier,
-        offeringIdentifier: offerings.current.identifier,
+      const purchaseResult = await Purchases.purchasePackage({
+        aPackage: targetPackage,
       });
 
       // Check if purchase was successful
-      if (purchaserInfo?.entitlements?.active?.['premium']) {
+      if (purchaseResult.customerInfo?.entitlements?.active?.['premium']) {
         await updatePremiumStatus(true);
 
         toast({
@@ -214,10 +213,10 @@ export const useInAppPurchases = () => {
         throw new Error('Purchases not available');
       }
 
-      const { purchaserInfo } = await Purchases.restoreTransactions();
+      const restoreResult = await Purchases.restorePurchases();
 
       // Check if premium entitlement exists
-      const hasPremium = purchaserInfo?.entitlements?.active?.['premium'] !== undefined;
+      const hasPremium = restoreResult.customerInfo?.entitlements?.active?.['premium'] !== undefined;
 
       if (hasPremium) {
         await updatePremiumStatus(true);
